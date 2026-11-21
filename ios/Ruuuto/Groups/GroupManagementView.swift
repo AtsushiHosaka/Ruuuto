@@ -10,21 +10,16 @@ struct GroupManagementView: View {
     @State private var revision = 0
 
     var body: some View {
-        GroupDirectoryView(loadGroups: loadGroups, selectedID: selectedID, select: select)
-            .id(revision)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("グループを作成", systemImage: "plus") {
-                        creating = true
-                    }
-                }
+        GroupDirectoryView(loadGroups: loadGroups, selectedID: selectedID, select: select) {
+            creating = true
+        }
+        .id(revision)
+        .sheet(isPresented: $creating) {
+            CreateGroupView { name in
+                let group = try await createGroup(name)
+                select(group)
+                revision += 1
             }
-            .sheet(isPresented: $creating) {
-                CreateGroupView { name in
-                    let group = try await createGroup(name)
-                    select(group)
-                    revision += 1
-                }
-            }
+        }
     }
 }

@@ -15,23 +15,35 @@ struct CreateGroupView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("グループ名") {
+                Section {
                     TextField("グループ名を入力", text: $name)
                         .textContentType(.organizationName)
                         .submitLabel(.done)
                         .disabled(isCreating)
                         .onSubmit(submit)
+                } header: {
+                    Text("グループ名")
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
+                        .foregroundStyle(RuuutoPalette.sub)
                 }
+                .listRowBackground(Color.white)
 
                 if let creationError {
                     Section {
                         Label(creationError, systemImage: "exclamationmark.circle")
                             .foregroundStyle(.red)
                     }
+                    .listRowBackground(Color.white)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(RuuutoPalette.page.ignoresSafeArea())
+            .tint(RuuutoPalette.ink)
             .navigationTitle("グループを作成")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(RuuutoPalette.page, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("閉じる") { dismiss() }
@@ -49,6 +61,7 @@ struct CreateGroupView: View {
             }
         }
         .interactiveDismissDisabled(isCreating)
+        .environment(\.colorScheme, .light)
     }
 
     private func submit() {
