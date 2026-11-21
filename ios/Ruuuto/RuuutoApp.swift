@@ -7,7 +7,7 @@ struct RuuutoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AuthenticationView()
+            AuthenticationView(notificationDelegate: notifications)
                 .onChange(of: scenePhase) {
                     if scenePhase == .active {
                         Task { await notifications.refreshAuthorization() }

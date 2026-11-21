@@ -8,5 +8,7 @@
 	<string>$(RUUUTO_SUPABASE_HOST)</string>
 	<key>RuuutoSupabasePublishableKey</key>
 	<string>$(RUUUTO_SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>RuuutoInvitationHost</key>
+	<string>$(RUUUTO_INVITATION_HOST)</string>
 </dict>
 </plist>
