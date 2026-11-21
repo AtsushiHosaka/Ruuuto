@@ -55,7 +55,7 @@ struct SignedInView: View {
                 guard scenePhase == .active else { return }
                 await workspace.openPendingNotification()
             }
-            .task(id: workspace.groups.selectedID) { [groupID = workspace.groups.selectedID] in
+            .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
                 await workspace.loadSelectedBoard(groupID)
             }
             .alert("ログアウトできませんでした", isPresented: $signOutError) {

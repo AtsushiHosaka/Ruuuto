@@ -31,6 +31,7 @@ final class SignedInWorkspace {
     let userID: UUID
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups
+    private(set) var boardLoadRequestID: UUID?
     private(set) var isSigningOut = false
     var topicEditor: TopicEditorViewModel? {
         guard case .editTopic(let editor) = destination else { return nil }
@@ -176,6 +177,7 @@ final class SignedInWorkspace {
         guard isCurrentSession else { return }
         groups.selectGroup(id: groupID)
         defaults.set(groupID.uuidString, forKey: groupSelectionKey)
+        boardLoadRequestID = UUID()
         if let boardID {
             navigate(to: .notificationBoard(groupID: groupID, boardID: boardID))
         } else {

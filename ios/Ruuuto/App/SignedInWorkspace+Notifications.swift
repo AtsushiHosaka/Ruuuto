@@ -30,15 +30,9 @@ extension SignedInWorkspace {
             return
         }
 
-        let sameGroup = groups.selectedID == groupID
         groups.selectGroup(group)
         openBoard(groupID: groupID, boardID: boardID)
-
-        // Changing the selected group restarts the view's board task; the same group needs an explicit reload.
-        if sameGroup {
-            await loadSelectedBoard(groupID)
-        }
-        guard isCurrentSession, !Task.isCancelled else { return }
+        // Opening the board starts a separate task, so consuming the tap cannot cancel its load.
         notifications.acknowledgeTap(event)
     }
 

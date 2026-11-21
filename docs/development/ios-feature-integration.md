@@ -19,7 +19,7 @@ iOSのアダプターは、Supabase Authのセッションを使って以下のR
 | 関連課題 | RPCと引数 | 結果 |
 | --- | --- | --- |
 | RCNO-42 | `ruuuto_list_groups()` | 本人が所属するグループの配列。各要素は `id` と `name` |
-| RCNO-42 | `ruuuto_create_group(p_name)` | 作成したグループの単一オブジェクト。 `id` と `name` |
+| RCNO-42 | `ruuuto_create_group(p_name, p_request_id)` | 作成したグループの `id` と `name`。同じ利用者とリクエストIDの再送は同じグループを返し、所属や初回ボードを重複して作らない |
 | RCNO-42 | `ruuuto_issue_invitation(p_group_id)` | `token` を持つ単一オブジェクト。発行権限、有効期限と失効はサーバーで判定 |
 | RCNO-42 | `ruuuto_accept_invitation(p_token)` | `group_id` を持つ単一オブジェクト。参加済みは同じ成功結果。無効は `RC003`、期限切れは `RC004` |
 | RCNO-43 | `ruuuto_current_board(p_group_id)` | `id`、`group_id`、`topic`、`opens_at`、`closes_at` を持つ単一オブジェクト。時刻はオフセット付きのISO 8601 |

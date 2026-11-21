@@ -6,7 +6,9 @@ extension SignedInWorkspace {
         let creationID = UUID()
         let client = session.client
         let model = CreateGroupViewModel(
-            createGroup: { try await CreateGroupAPI.create(client: client, name: $0) },
+            createGroup: { name, requestID in
+                try await CreateGroupAPI.create(client: client, name: name, requestID: requestID)
+            },
             selectGroup: { [weak self] group in
                 guard let self, self.isCurrentSession,
                       case .createGroup(creationID, _) = self.destination else { return }
