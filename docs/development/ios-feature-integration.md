@@ -10,7 +10,7 @@
 | お題変更 | `showTopicEditor()` で対象ボードの編集を開始し、`topicEditor` で入力を管理する。`saveTopic()` は保存後に同じグループのボードを読み直す。 [RCNO-46](https://atsushi0130.atlassian.net/browse/RCNO-46) |
 | 通知設定 | `showNotificationSettings()` で開き、`notifications` の許可状態、端末同期、エラーと再試行を表示する。 [RCNO-47](https://atsushi0130.atlassian.net/browse/RCNO-47) |
 
-通知を開くと、所属一覧を取得し直してアクセスできるグループかを確認する。通知のボードIDが開催中のものと異なる場合は、過去ボードの遷移先を渡す。表示時のボード取得と所属確認は履歴画面側で行う。 [RCNO-26](https://atsushi0130.atlassian.net/browse/RCNO-26)
+通知を開くと、所属一覧を取得し直してアクセスできるグループかを確認する。通知のボードIDが開催中のものと異なる場合は、過去ボードの遷移先を渡す。通知先の取得に失敗した場合は、ボードの再取得と履歴への振り分けを行う `loadSelectedBoard(_:)` で再試行する。過去ボードの取得と所属確認は履歴画面側で行う。 [RCNO-26](https://atsushi0130.atlassian.net/browse/RCNO-26)
 
 ## Supabase側と照合する暫定契約
 

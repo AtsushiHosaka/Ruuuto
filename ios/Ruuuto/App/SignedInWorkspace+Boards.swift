@@ -45,6 +45,6 @@ extension SignedInWorkspace {
 
     func closeTopicEditor() {
         guard let editor = topicEditor else { return }
-        openBoard(groupID: editor.board.groupID)
+        navigate(to: .board(groupID: editor.board.groupID))
     }
 }
