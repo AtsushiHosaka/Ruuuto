@@ -2,10 +2,12 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @State private var session: SessionModel?
-    @State private var signOutError = false
+    @State private var pendingInvitation: InvitationLink?
+    private let invitationOrigin: URL?
 
     init(configuration: AppConfiguration? = AppConfiguration()) {
         _session = State(initialValue: configuration.map(SessionModel.init))
+        invitationOrigin = configuration?.invitationOrigin
     }
 
     var body: some View {
@@ -16,29 +18,22 @@ struct AuthenticationView: View {
                     ProgressView("ログイン状態を確認中")
                 case .signedOut:
                     LoginView(signIn: session.signIn, signUp: session.signUp)
-                case .signedIn:
-                    ContentView()
-                        .navigationTitle("ルート")
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button("ログアウト") {
-                                    Task {
-                                        do {
-                                            try await session.signOut()
-                                        } catch {
-                                            signOutError = true
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                case .signedIn(let userID):
+                    SignedInView(
+                        session: session,
+                        userID: userID,
+                        invitationOrigin: invitationOrigin,
+                        pendingInvitation: $pendingInvitation
+                    )
+                        .id(userID)
                 }
             }
             .task { await session.observe() }
-            .alert("ログアウトできませんでした", isPresented: $signOutError) {
-                Button("閉じる", role: .cancel) {}
-            } message: {
-                Text("通信を確認して、もう一度お試しください。")
+            .onOpenURL { url in
+                guard let invitationOrigin,
+                      let link = InvitationLink(url: url, allowedOrigin: invitationOrigin,
+                                                pathPrefix: InvitationLink.pathPrefix) else { return }
+                pendingInvitation = link
             }
         } else {
             ContentUnavailableView(
