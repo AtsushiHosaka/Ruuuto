@@ -18,7 +18,7 @@ struct AuthenticationView: View {
                     LoginView(signIn: session.signIn, signUp: session.signUp)
                 case .signedIn:
                     ContentView()
-                        .navigationTitle("ルート")
+                        .navigationTitle("Ruuuto")
                         .toolbar {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button("ログアウト") {
