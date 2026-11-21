@@ -14,3 +14,11 @@
 アクセントと濃背景はHTMLの指定値、そのほかはCSSの `color-mix()` をsRGBで計算し、8bitの値に丸めた標準色。季節ごとの色の切替は、HTML内の12か月分の定義を参照する。
 
 グループ選択とボードはHTMLの画面を参照する。ログインや通知設定など、HTMLに画面がない箇所は共通カラー、角丸のカード、丸みのある見出しを使って補う。日本語の文字はiOSのシステムフォントを使う。
+
+## 文字
+
+SwiftUIでは、承認された [追加4画面のモック](ruuuto-flow-mock.html) と同じ3書体を `RuuutoType` から使う。見出しはM PLUS Rounded 1c ExtraBold、本文はNoto Sans JP Regular相当、写真のキャプションはYusei Magic。フォントはアプリに同梱するため、表示時にネット接続は不要。
+
+[同梱フォントと各SIL Open Font License](../../ios/Ruuuto/Core/Design/Fonts) を参照する。
+
+[フォントの配布元コミット](https://github.com/google/fonts/tree/06bfe0d62a98375cb09c942fa18e68bd32cff057/ofl)
