@@ -24,6 +24,7 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, Observable
 
     private let notificationCenter = UNUserNotificationCenter.current()
     private var settingsReadID = UUID()
+    private var remoteDeliveryPaused = true
 
     func application(
         _ application: UIApplication,
@@ -62,6 +63,19 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, Observable
         updateAuthorization(settings.authorizationStatus)
     }
 
+    func pauseRemoteDelivery() {
+        guard !remoteDeliveryPaused else { return }
+        remoteDeliveryPaused = true
+        pendingTap = nil
+        registration = .idle
+        UIApplication.shared.unregisterForRemoteNotifications()
+    }
+
+    func resumeRemoteDelivery() async {
+        remoteDeliveryPaused = false
+        await refreshAuthorization()
+    }
+
     func openNotificationSettings() {
         guard let settingsURL = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
         UIApplication.shared.open(settingsURL)
@@ -91,7 +105,8 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, Observable
     }
 
     private var allowsDelivery: Bool {
-        switch authorizationStatus {
+        guard !remoteDeliveryPaused else { return false }
+        return switch authorizationStatus {
         case .authorized, .provisional, .ephemeral:
             true
         default:
@@ -122,7 +137,8 @@ extension NotificationAppDelegate: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         guard notification.request.trigger is UNPushNotificationTrigger else { return [] }
-        return [.banner, .list, .sound]
+        let allowsDisplay = await MainActor.run { allowsDelivery }
+        return allowsDisplay ? [.banner, .list, .sound] : []
     }
 
     nonisolated func userNotificationCenter(

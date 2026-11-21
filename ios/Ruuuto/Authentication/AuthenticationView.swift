@@ -32,6 +32,11 @@ struct AuthenticationView: View {
                 }
             }
             .task { await session.observe() }
+            .onChange(of: session.state) {
+                if case .signedOut = session.state {
+                    notificationDelegate.pauseRemoteDelivery()
+                }
+            }
             .onOpenURL { url in
                 guard let invitationOrigin,
                       let link = InvitationLink(url: url, allowedOrigin: invitationOrigin,

@@ -56,7 +56,7 @@ struct SignedInView: View {
                 await workspace.openPendingNotification()
             }
             .task(id: workspace.groups.selectedID) { [groupID = workspace.groups.selectedID] in
-                await workspace.currentBoard.selectGroup(groupID)
+                await workspace.loadSelectedBoard(groupID)
             }
             .alert("ログアウトできませんでした", isPresented: $signOutError) {
                 Button("閉じる", role: .cancel) {}

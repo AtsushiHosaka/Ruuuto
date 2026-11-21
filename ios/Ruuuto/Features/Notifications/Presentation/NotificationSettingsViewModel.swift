@@ -125,9 +125,12 @@ final class NotificationSettingsViewModel {
         }
     }
 
-    func resumeAfterFailedSignOut() {
-        suspendedUserID = nil
-        scheduleSynchronization()
+    func pauseRemoteDelivery() {
+        notifications.pauseRemoteDelivery()
+    }
+
+    func resumeRemoteDelivery() async {
+        await notifications.resumeRemoteDelivery()
     }
 
     // The app validates authentication and membership before routing to this destination.

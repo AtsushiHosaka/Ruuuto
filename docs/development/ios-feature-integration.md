@@ -10,7 +10,7 @@
 | お題変更 | `showTopicEditor()` で対象ボードの編集を開始し、`topicEditor` で入力を管理する。`saveTopic()` は保存後に同じグループのボードを読み直す。 [RCNO-46](https://atsushi0130.atlassian.net/browse/RCNO-46) |
 | 通知設定 | `showNotificationSettings()` で開き、`notifications` の許可状態、端末同期、エラーと再試行を表示する。 [RCNO-47](https://atsushi0130.atlassian.net/browse/RCNO-47) |
 
-通知を開くと、所属一覧を取得し直してアクセスできるグループかを確認する。対象ボードへ遷移した後も、ボードや写真を取得する側でSupabaseの権限確認が必要になる。
+通知を開くと、所属一覧を取得し直してアクセスできるグループかを確認する。通知のボードIDが開催中のものと異なる場合は、過去ボードの遷移先を渡す。表示時のボード取得と所属確認は履歴画面側で行う。 [RCNO-26](https://atsushi0130.atlassian.net/browse/RCNO-26)
 
 ## Supabase側と照合する暫定契約
 
@@ -26,7 +26,7 @@ iOSのアダプターは、Supabase Authのセッションを使って以下のR
 | RCNO-41 | `ruuuto_save_topic(p_board_id, p_topic)` | 保存が確定したら成功。権限拒否は `42501`、入力エラーは `RC001`、ボードの締切後は `RC002` |
 | RCNO-37 | `ruuuto_sync_device(p_installation_id, p_apns_token)` | 本人の端末登録を反映したら成功。解除時はトークンがJSONの `null`。通知のカスタム項目は `group_id` と `board_id` |
 
-iOSはアプリのインストールごとに端末登録用のIDを保持し、通知許可またはトークンの変更を同期する。サインアウト前は同じセッションで端末登録を解除する。APNsの署名鍵と送信設定はバックエンドで管理する。
+iOSはアプリのインストールごとに端末登録用のIDを保持し、通知許可またはトークンの変更を同期する。サインアウト時は同じセッションで端末登録の解除を試み、端末側のリモート通知登録を解除してからログアウトする。次回の登録では、サーバーが同じインストールIDを現在の利用者へ付け替える。APNsの署名鍵と送信設定はバックエンドで管理する。
 
 ## 環境が決まったら設定する値
 

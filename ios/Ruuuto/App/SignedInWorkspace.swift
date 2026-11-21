@@ -12,6 +12,7 @@ final class SignedInWorkspace {
         case inviteSharing
         case notifications
         case board(groupID: UUID, boardID: UUID?)
+        case historicalBoard(groupID: UUID, boardID: UUID)
     }
 
     struct SharedInvitation: Identifiable {
@@ -69,8 +70,10 @@ final class SignedInWorkspace {
     }
 
     func start() async {
+        guard isCurrentSession, !Task.isCancelled else { return }
         invitation?.setSignedInUser(userID)
         notifications.setSignedInUser(userID)
+        await notifications.resumeRemoteDelivery()
         await groups.refresh()
         guard isCurrentSession, !Task.isCancelled, groups.loadState == .loaded, destination == .groups,
               groups.selectedID == nil else { return }
@@ -195,15 +198,44 @@ final class SignedInWorkspace {
     }
 
     func openPendingNotification() async {
-        guard isCurrentSession, let event = notifications.pendingTap else { return }
-        await groups.refresh()
-        guard isCurrentSession, !Task.isCancelled, notifications.pendingTap == event,
-              groups.loadState == .loaded else { return }
+        guard isCurrentSession, !isSigningOut, let event = notifications.pendingTap else { return }
 
-        if groups.groups.contains(where: { $0.id == event.destination.groupID }) {
-            openBoard(groupID: event.destination.groupID, boardID: event.destination.boardID)
+        let memberships: [BoardGroup]
+        do {
+            memberships = try await GroupDirectoryAPI.list(client: session.client)
+        } catch {
+            return
         }
+
+        guard isCurrentSession, !isSigningOut, !Task.isCancelled,
+              notifications.pendingTap == event else { return }
+        let groupID = event.destination.groupID
+        let boardID = event.destination.boardID
+        guard let group = memberships.first(where: { $0.id == groupID }) else {
+            notifications.acknowledgeTap(event)
+            return
+        }
+
+        let sameGroup = groups.selectedID == groupID
+        groups.selectGroup(group)
+        openBoard(groupID: groupID, boardID: boardID)
         notifications.acknowledgeTap(event)
+
+        // Changing the selected group restarts the view's board task; the same group needs an explicit reload.
+        if sameGroup {
+            await loadSelectedBoard(groupID)
+        }
+    }
+
+    func loadSelectedBoard(_ groupID: UUID?) async {
+        await currentBoard.selectGroup(groupID)
+        guard isCurrentSession, !Task.isCancelled,
+              let groupID, groups.selectedID == groupID,
+              case let .board(destinationGroupID, boardID?) = destination,
+              destinationGroupID == groupID,
+              case let .loaded(activeBoard) = currentBoard.state(for: groupID),
+              activeBoard.id != boardID else { return }
+        destination = .historicalBoard(groupID: groupID, boardID: boardID)
     }
 
     private func clearInvitationFlow() {
@@ -226,14 +258,24 @@ final class SignedInWorkspace {
         guard isCurrentSession, !isSigningOut else { return }
         isSigningOut = true
         defer { isSigningOut = false }
-        try await notifications.unregisterBeforeSignOut()
+        do {
+            try await notifications.unregisterBeforeSignOut()
+        } catch {
+            // The device stops receiving pushes locally even when the server is unreachable.
+        }
+        guard isCurrentSession else { return }
+        notifications.setSignedInUser(nil)
+        notifications.pauseRemoteDelivery()
         do {
             try await session.signOut()
         } catch {
-            notifications.resumeAfterFailedSignOut()
-            throw error
+            // Supabase removes its local session before revoking it remotely.
+            if isCurrentSession, session.client.auth.currentSession != nil {
+                notifications.setSignedInUser(userID)
+                await notifications.resumeRemoteDelivery()
+                throw error
+            }
         }
-        notifications.setSignedInUser(nil)
         invitation?.setSignedInUser(nil)
     }
 
