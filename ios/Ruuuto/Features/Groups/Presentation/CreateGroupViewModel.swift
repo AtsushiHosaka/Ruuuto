@@ -4,20 +4,38 @@ import Observation
 @MainActor
 @Observable
 final class CreateGroupViewModel {
-    var name = ""
-    private(set) var isCreating = false
-    private(set) var creationError: String?
-    private(set) var createdGroup: BoardGroup?
+    enum State: Equatable {
+        case idle
+        case creating
+        case failed(String)
+        case created(BoardGroup)
+    }
 
-    private let createGroup: @MainActor (String) async throws -> BoardGroup
+    var name = ""
+    private(set) var state: State = .idle
+
+    private let createGroup: @MainActor (String, UUID) async throws -> BoardGroup
+    @ObservationIgnored private var lastRequest: (name: String, id: UUID)?
     private let selectGroup: @MainActor (BoardGroup) async -> Void
 
     init(
-        createGroup: @escaping @MainActor (String) async throws -> BoardGroup,
+        createGroup: @escaping @MainActor (String, UUID) async throws -> BoardGroup,
         selectGroup: @escaping @MainActor (BoardGroup) async -> Void
     ) {
         self.createGroup = createGroup
         self.selectGroup = selectGroup
+    }
+
+    var isCreating: Bool { state == .creating }
+
+    var creationError: String? {
+        guard case .failed(let message) = state else { return nil }
+        return message
+    }
+
+    var createdGroup: BoardGroup? {
+        guard case .created(let group) = state else { return nil }
+        return group
     }
 
     var previewName: String? {
@@ -32,19 +50,25 @@ final class CreateGroupViewModel {
     @discardableResult
     func submit() async -> BoardGroup? {
         guard !Task.isCancelled, !isCreating, createdGroup == nil, let name = previewName else { return nil }
-        isCreating = true
-        creationError = nil
-        defer { isCreating = false }
+        let requestID = if let lastRequest, lastRequest.name == name {
+            lastRequest.id
+        } else {
+            UUID()
+        }
+        lastRequest = (name, requestID)
+
+        state = .creating
 
         do {
-            let group = try await createGroup(name)
-            createdGroup = group
+            let group = try await createGroup(name, requestID)
+            state = .created(group)
             await selectGroup(group)
             return group
         } catch is CancellationError {
+            state = .idle
             return nil
         } catch {
-            creationError = "グループを作成できませんでした。もう一度お試しください。"
+            state = .failed("グループを作成できませんでした。もう一度お試しください。")
             return nil
         }
     }
