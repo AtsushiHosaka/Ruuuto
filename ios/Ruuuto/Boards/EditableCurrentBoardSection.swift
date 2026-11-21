@@ -13,7 +13,7 @@ struct EditableCurrentBoardSection: View {
         CurrentBoardSection(group: group, loadBoard: loadBoard, canEdit: canEdit, edit: openEditor)
             .id(revision)
             .sheet(item: $editingBoard) { board in
-                EditTopicView(board: board) { topic in
+                EditTopicView(groupName: group.name, board: board) { topic in
                     try await saveTopic(board.id, topic)
                     revision += 1
                 }
