@@ -37,7 +37,7 @@ flowchart LR
 
 | 層 | 責務 |
 | --- | --- |
-| Presentation | Viewは入力と表示を担当する。ViewModelは `@MainActor` で画面状態と非同期操作を管理し、読み込み中、空、失敗、再試行を表現する。入力途中の値やシートの開閉は、使うViewの `@State` に置く。 |
+| Presentation | Viewは入力と表示を担当する。ViewModelは `@MainActor` で画面状態と非同期操作を管理し、読み込み中、空、失敗、再試行を表現する。検証、送信、再試行に使う入力値はViewModelに置く。シートの開閉など、その画面の表示だけに使う状態はViewの `@State` に置く。 |
 | Domain | SDKに依存しない機能のモデル、業務ルール、Repositoryの契約を置く。通信形式やSwiftUIの画面状態は外側の層で扱う。 |
 | Data | Supabaseと通信し、DTOとDomainモデルを変換する。認証失効・権限拒否・競合・通信失敗などを、呼び出し側が扱える結果に変換する。 |
 | AppとCore | AppでSupabaseクライアントとRepositoryを組み立て、画面が必要な依存を渡す。認証済みセッションごとにViewModelを保持し、各機能の結果を受けて遷移を扱う。Coreには、複数の機能が共有する設定や基盤を置く。 |
