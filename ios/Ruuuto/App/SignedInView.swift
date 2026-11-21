@@ -27,7 +27,7 @@ struct SignedInView: View {
                 }
             }
             .task { await workspace.start() }
-            .task(id: workspace.groups.selectedID) { [groupID = workspace.groups.selectedID] in
+            .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
                 await workspace.currentBoard.selectGroup(groupID)
             }
             .alert("ログアウトできませんでした", isPresented: $signOutError) {

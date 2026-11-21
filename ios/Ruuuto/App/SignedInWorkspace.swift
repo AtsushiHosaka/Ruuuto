@@ -16,6 +16,7 @@ final class SignedInWorkspace {
     private let userID: UUID
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups
+    private(set) var boardLoadRequestID: UUID?
     private(set) var isSigningOut = false
     private(set) var groupCreation: CreateGroupViewModel?
     @ObservationIgnored private var groupCreationID: UUID?
@@ -57,7 +58,9 @@ final class SignedInWorkspace {
         let client = session.client
         groupCreationID = creationID
         groupCreation = CreateGroupViewModel(
-            createGroup: { try await CreateGroupAPI.create(client: client, name: $0) },
+            createGroup: { name, requestID in
+                try await CreateGroupAPI.create(client: client, name: name, requestID: requestID)
+            },
             selectGroup: { [weak self] group in
                 guard let self, self.isCurrentSession, self.destination == .createGroup,
                       self.groupCreationID == creationID else { return }
@@ -96,5 +99,6 @@ final class SignedInWorkspace {
         groups.selectGroup(id: groupID)
         defaults.set(groupID.uuidString, forKey: groupSelectionKey)
         destination = .board(groupID: groupID, boardID: boardID)
+        boardLoadRequestID = UUID()
     }
 }
