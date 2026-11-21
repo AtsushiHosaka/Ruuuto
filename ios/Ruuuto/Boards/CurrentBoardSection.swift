@@ -3,6 +3,8 @@ import SwiftUI
 struct CurrentBoardSection: View {
     let group: BoardGroup
     let loadBoard: (UUID) async throws -> CurrentBoard
+    var canEdit: (CurrentBoard) -> Bool = { _ in true }
+    var edit: ((CurrentBoard) -> Void)? = nil
 
     @State private var state: CurrentBoardState = .idle
     @State private var loadedGroupID: UUID?
@@ -18,7 +20,9 @@ struct CurrentBoardSection: View {
         CurrentBoardView(
             groupName: group.name,
             state: loadedGroupID == group.id ? state : .loading,
-            retry: { reload += 1 }
+            retry: { reload += 1 },
+            canEdit: canEdit,
+            edit: edit
         )
         .task(id: request) {
             guard !Task.isCancelled else { return }

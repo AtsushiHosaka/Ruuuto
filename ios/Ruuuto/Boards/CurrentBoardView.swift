@@ -4,6 +4,22 @@ struct CurrentBoardView: View {
     let groupName: String
     let state: CurrentBoardState
     let retry: () -> Void
+    let canEdit: (CurrentBoard) -> Bool
+    let edit: ((CurrentBoard) -> Void)?
+
+    init(
+        groupName: String,
+        state: CurrentBoardState,
+        retry: @escaping () -> Void,
+        canEdit: @escaping (CurrentBoard) -> Bool = { _ in true },
+        edit: ((CurrentBoard) -> Void)? = nil
+    ) {
+        self.groupName = groupName
+        self.state = state
+        self.retry = retry
+        self.canEdit = canEdit
+        self.edit = edit
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -28,6 +44,11 @@ struct CurrentBoardView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
+                if let edit, canEdit(board) {
+                    Button("お題を変更") {
+                        edit(board)
+                    }
+                }
             case let .failed(message):
                 Text(message)
                 Button("再試行", action: retry)
