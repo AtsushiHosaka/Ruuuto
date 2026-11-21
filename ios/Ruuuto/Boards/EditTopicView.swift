@@ -18,20 +18,35 @@ struct EditTopicView: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("お題", text: $topic, axis: .vertical)
-                    .disabled(isSaving)
+                Section {
+                    TextField("お題", text: $topic, axis: .vertical)
+                        .disabled(isSaving)
+                } header: {
+                    Text("お題")
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
+                        .foregroundStyle(RuuutoPalette.sub)
+                }
+                .listRowBackground(Color.white)
 
                 if let errorMessage {
-                    Text(errorMessage)
+                    Label(errorMessage, systemImage: "exclamationmark.circle")
                         .foregroundStyle(.red)
+                        .listRowBackground(Color.white)
                 }
 
                 if isSaving {
                     ProgressView("保存中")
+                        .listRowBackground(Color.white)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(RuuutoPalette.page.ignoresSafeArea())
+            .tint(RuuutoPalette.ink)
             .navigationTitle("お題を変更")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(RuuutoPalette.page, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") {
@@ -47,6 +62,7 @@ struct EditTopicView: View {
             }
             .interactiveDismissDisabled(isSaving)
         }
+        .environment(\.colorScheme, .light)
     }
 
     private var trimmedTopic: String {
