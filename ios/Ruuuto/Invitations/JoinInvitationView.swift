@@ -22,31 +22,91 @@ struct JoinInvitationView: View {
     @State private var state: State = .ready
 
     var body: some View {
-        Form {
-            Section("グループへの招待") {
-                if !signedIn {
-                    Text("ログインすると、この招待からグループに参加できます。")
-                    Button("ログインへ進む", action: signIn)
-                } else {
-                    switch state {
-                    case .ready:
-                        Button("グループに参加") { Task { await accept() } }
-                    case .joining:
-                        ProgressView("参加中")
-                    case .accepted:
-                        Label("参加しました", systemImage: "checkmark.circle")
-                    case .invalid:
-                        Text("この招待リンクは無効です。新しいリンクを受け取ってください。")
-                    case .expired:
-                        Text("この招待リンクの期限が切れています。新しいリンクを受け取ってください。")
-                    case .failed:
-                        Text("参加できませんでした。通信を確認してください。")
-                        Button("再試行") { Task { await accept() } }
-                    }
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Image(systemName: "link")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(RuuutoPalette.ink)
+                    .padding(14)
+                    .background(RuuutoPalette.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: 16))
+                    .accessibilityHidden(true)
+
+                Text("グループへの招待")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(RuuutoPalette.ink)
+                    .accessibilityAddTraits(.isHeader)
+
+                invitationContent
+            }
+            .frame(maxWidth: 420, alignment: .leading)
+            .padding(20)
+            .background(.white, in: RoundedRectangle(cornerRadius: 24))
+            .overlay {
+                RoundedRectangle(cornerRadius: 24)
+                    .strokeBorder(RuuutoPalette.line, lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity)
+        }
+        .background(RuuutoPalette.page.ignoresSafeArea())
+        .navigationTitle("招待")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private var invitationContent: some View {
+        if !signedIn {
+            Text("ログインすると、この招待からグループに参加できます。")
+                .foregroundStyle(RuuutoPalette.sub)
+            invitationButton("ログインへ進む", action: signIn)
+        } else {
+            switch state {
+            case .ready:
+                invitationButton("グループに参加") { Task { await accept() } }
+            case .joining:
+                ProgressView("参加中")
+                    .tint(RuuutoPalette.ink)
+                    .foregroundStyle(RuuutoPalette.ink)
+                    .padding(.vertical, 8)
+            case .accepted:
+                invitationStatus("参加しました", icon: "checkmark.circle")
+            case .invalid:
+                invitationStatus("この招待リンクは無効です。新しいリンクを受け取ってください。", icon: "exclamationmark.circle")
+            case .expired:
+                invitationStatus("この招待リンクの期限が切れています。新しいリンクを受け取ってください。", icon: "clock")
+            case .failed:
+                invitationStatus("参加できませんでした。通信を確認してください。", icon: "exclamationmark.circle")
+                invitationButton("再試行") { Task { await accept() } }
             }
         }
-        .navigationTitle("招待")
+    }
+
+    private func invitationStatus(_ title: LocalizedStringKey, icon: String) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: icon)
+                .accessibilityHidden(true)
+        }
+        .foregroundStyle(RuuutoPalette.ink)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RuuutoPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func invitationButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(.body, design: .rounded, weight: .bold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(RuuutoPalette.ink)
+                .frame(maxWidth: .infinity, minHeight: 48)
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.roundedRectangle(radius: 14))
+        .controlSize(.large)
+        .tint(RuuutoPalette.accent)
     }
 
     private func accept() async {
