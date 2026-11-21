@@ -1,13 +1,10 @@
 import SwiftUI
 
 struct AuthenticationView: View {
-    let notifications: NotificationAppDelegate
-
     @State private var session: SessionModel?
     @State private var signOutError = false
 
-    init(notifications: NotificationAppDelegate, configuration: AppConfiguration? = AppConfiguration()) {
-        self.notifications = notifications
+    init(configuration: AppConfiguration? = AppConfiguration()) {
         _session = State(initialValue: configuration.map(SessionModel.init))
     }
 
@@ -23,13 +20,6 @@ struct AuthenticationView: View {
                     ContentView()
                         .navigationTitle("ルート")
                         .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                NavigationLink {
-                                    NotificationSettingsView(notifications: notifications)
-                                } label: {
-                                    Label("通知", systemImage: "bell")
-                                }
-                            }
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button("ログアウト") {
                                     Task {
