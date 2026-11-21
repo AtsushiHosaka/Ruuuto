@@ -6,53 +6,101 @@ struct NotificationSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Image(systemName: "bell")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(RuuutoPalette.ink)
-                    .padding(14)
-                    .background(RuuutoPalette.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: 16))
-                    .accessibilityHidden(true)
-
-                Text("お題の更新")
-                    .font(.system(.title2, design: .rounded, weight: .bold))
-                    .foregroundStyle(RuuutoPalette.ink)
-                    .accessibilityAddTraits(.isHeader)
-
-                permissionContent
+            VStack(alignment: .leading, spacing: 28) {
+                permissionRow
+                notificationExample
             }
-            .frame(maxWidth: 420, alignment: .leading)
-            .padding(20)
-            .background(.white, in: RoundedRectangle(cornerRadius: 24))
-            .overlay {
-                RoundedRectangle(cornerRadius: 24)
-                    .strokeBorder(RuuutoPalette.line, lineWidth: 1)
-                    .allowsHitTesting(false)
-            }
-            .padding(20)
+            .frame(maxWidth: 390, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
             .frame(maxWidth: .infinity)
         }
+        .foregroundStyle(RuuutoPalette.ink)
         .background(RuuutoPalette.page.ignoresSafeArea())
-        .navigationTitle("通知")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("通知設定")
+                    .font(RuuutoType.rounded(.title3))
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
         .task { await notifications.refreshAuthorization() }
         .alert("通知設定を変更できませんでした", isPresented: $requestFailed) {
             Button("閉じる", role: .cancel) {}
         }
     }
 
+    private var permissionRow: some View {
+        VStack(spacing: 0) {
+            rule
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 14) {
+                    permissionDescription
+                        .fixedSize(horizontal: true, vertical: false)
+                    Spacer(minLength: 0)
+                    permissionAction
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    permissionDescription
+                    permissionAction
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 10)
+            .frame(minHeight: 64)
+            rule
+        }
+    }
+
+    private var rule: some View {
+        Rectangle()
+            .fill(RuuutoPalette.line)
+            .frame(height: 1)
+            .accessibilityHidden(true)
+    }
+
+    private var permissionDescription: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "bell")
+                .font(.title3)
+                .foregroundStyle(RuuutoPalette.soft)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("お題の更新")
+                    .font(RuuutoType.rounded(.body))
+                permissionStatus
+                    .font(RuuutoType.body(.footnote))
+                    .foregroundStyle(RuuutoPalette.sub)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
     @ViewBuilder
-    private var permissionContent: some View {
+    private var permissionStatus: some View {
         switch notifications.authorizationStatus {
         case .none:
-            ProgressView("通知設定を確認中")
-                .tint(RuuutoPalette.ink)
-                .foregroundStyle(RuuutoPalette.ink)
-                .padding(.vertical, 8)
+            ProgressView("確認中")
+        case .notDetermined, .denied:
+            Text("オフ")
+        case .provisional:
+            Text("仮許可")
+        case .authorized, .ephemeral:
+            Text("オン")
+        @unknown default:
+            Text("設定を確認してください")
+        }
+    }
+
+    @ViewBuilder
+    private var permissionAction: some View {
+        switch notifications.authorizationStatus {
+        case .none:
+            EmptyView()
         case .notDetermined, .provisional:
-            Text("お題が変わったときに通知を受け取れます。")
-                .foregroundStyle(RuuutoPalette.sub)
-            notificationButton("通知を許可", icon: "bell.badge") {
+            Button {
                 Task {
                     do {
                         try await notifications.requestPermission()
@@ -60,13 +108,16 @@ struct NotificationSettingsView: View {
                         requestFailed = true
                     }
                 }
+            } label: {
+                Text("通知を許可")
+                    .font(RuuutoType.rounded(.footnote))
+                    .foregroundStyle(notifications.isRequestingPermission ? RuuutoPalette.sub : RuuutoPalette.soft)
+                    .frame(minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .disabled(notifications.isRequestingPermission)
-        case .denied:
-            permissionStatus("通知はオフです。iPhoneの設定から変更できます。", icon: "bell.slash")
-            openSettingsButton
-        case .authorized, .ephemeral:
-            permissionStatus("通知はオンです。", icon: "checkmark.circle")
+        case .denied, .authorized, .ephemeral:
             openSettingsButton
         @unknown default:
             openSettingsButton
@@ -74,37 +125,37 @@ struct NotificationSettingsView: View {
     }
 
     private var openSettingsButton: some View {
-        notificationButton("iPhoneの通知設定を開く", icon: "gearshape", action: notifications.openNotificationSettings)
+        Button(action: notifications.openNotificationSettings) {
+            Text("iPhoneの通知設定を開く")
+                .font(RuuutoType.rounded(.footnote))
+                .foregroundStyle(RuuutoPalette.soft)
+                .frame(minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
-    private func permissionStatus(_ title: LocalizedStringKey, icon: String) -> some View {
-        Label {
-            Text(title)
-        } icon: {
-            Image(systemName: icon)
-                .accessibilityHidden(true)
+    private var notificationExample: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("通知例")
+                .font(RuuutoType.rounded(.caption))
+                .foregroundStyle(RuuutoPalette.sub)
+            HStack(spacing: 11) {
+                Rectangle()
+                    .fill(RuuutoPalette.accent)
+                    .frame(width: 2)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("お題が変わりました")
+                        .font(RuuutoType.rounded(.body))
+                    Text("えーえす班 · 窓の外")
+                        .font(RuuutoType.body(.footnote))
+                        .foregroundStyle(RuuutoPalette.sub)
+                }
+                .padding(.vertical, 3)
+            }
+            .fixedSize(horizontal: false, vertical: true)
         }
-        .foregroundStyle(RuuutoPalette.ink)
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RuuutoPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    private func notificationButton(
-        _ title: LocalizedStringKey,
-        icon: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: icon)
-                .font(.system(.body, design: .rounded, weight: .bold))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(RuuutoPalette.ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
-        }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.roundedRectangle(radius: 14))
-        .controlSize(.large)
-        .tint(RuuutoPalette.accent)
+        .accessibilityElement(children: .combine)
     }
 }
