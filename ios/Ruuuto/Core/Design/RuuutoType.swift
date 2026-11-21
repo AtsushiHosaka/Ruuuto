@@ -10,12 +10,13 @@ enum RuuutoType {
         return .custom(name, size: metrics(for: style).base, relativeTo: style)
     }
 
-    static func body(_ style: Font.TextStyle) -> Font {
+    static func body(_ style: Font.TextStyle, dynamicTypeSize: DynamicTypeSize) -> Font {
         let name = "NotoSansJP-Thin"
         guard registered.contains(name) else { return .system(style) }
 
         let text = metrics(for: style)
-        let size = UIFontMetrics(forTextStyle: text.category).scaledValue(for: text.base)
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
+        let size = UIFontMetrics(forTextStyle: text.category).scaledValue(for: text.base, compatibleWith: traits)
         let base = CTFontCreateWithName(name as CFString, size, nil)
         let regular = CTFontDescriptorCreateCopyWithVariation(
             CTFontCopyFontDescriptor(base),
