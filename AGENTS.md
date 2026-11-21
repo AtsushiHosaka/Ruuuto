@@ -32,11 +32,7 @@ xcodebuild -project ios/Ruuuto.xcodeproj -scheme Ruuuto \
 
 ## アーキテクチャ
 
-iOSは `ios/Ruuuto/` に置く。SwiftUIの各画面は画面内の操作と表示を扱う。認証や選択中グループなど複数画面で使う状態はアプリの起点で管理し、画面には必要な値と操作を渡す。通信処理はViewの外に置く。
-
-Supabaseは、Authで本人確認し、Postgresで所属・週別ボード・写真・装飾を管理する。画像は非公開Storage、共同編集と在室表示はRealtime、週次起動はCron、APNs送信はEdge Functionsを使う。サーバーが書き込みの可否を確定する。再試行でデータが重複しない条件、締切と競合時の扱い、切替や退出時の購読解除は担当間で確認する。
-
-iOSとSupabaseの接点を変更するときは、JiraかPRにテーブルまたはRPC名、引数とレスポンス、必要な権限、失敗時の結果を書く。サーバーの仕様は、あゆむとiOSの利用側で確認する。スキーマ変更はマイグレーションとしてレビューする。検証用と配布用を区別し、所属者と非所属者でRLSとStorage・Realtimeの権限を確認してから配備する。
+iOSはFeature-based MVVMで機能ごとにまとめ、Clean Architectureの依存方向に沿ってPresentation・Domain・Dataを分ける。画面状態はViewModel、Supabase接続はData、依存の組み立てと画面遷移はAppで扱う。配置先、依存関係、Repositoryの契約、接続時の確認事項は [iOSアーキテクチャ](docs/development/architecture.md) に従う。
 
 ## Supabaseプロジェクトを用意する
 
