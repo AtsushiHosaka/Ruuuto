@@ -4,7 +4,7 @@ import SwiftUI
 struct RuuutoApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AuthenticationView()
         }
     }
 }
