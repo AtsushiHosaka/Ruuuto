@@ -5,6 +5,18 @@ enum InvitationJoinError: Error {
     case expired
 }
 
+struct InvitationSummary: Equatable, Sendable {
+    let groupName: String
+    let memberNames: [String]
+    let postcardCaptions: [String]
+
+    init(groupName: String, memberNames: [String], postcardCaptions: [String] = []) {
+        self.groupName = groupName
+        self.memberNames = memberNames
+        self.postcardCaptions = postcardCaptions
+    }
+}
+
 struct JoinInvitationView: View {
     enum State: Equatable {
         case ready
@@ -16,48 +28,139 @@ struct JoinInvitationView: View {
     }
 
     let signedIn: Bool
+    let summary: InvitationSummary?
     let signIn: () -> Void
     let join: () async throws -> Void
 
     @State private var state: State = .ready
 
+    init(
+        signedIn: Bool,
+        summary: InvitationSummary? = nil,
+        signIn: @escaping () -> Void,
+        join: @escaping () async throws -> Void
+    ) {
+        self.signedIn = signedIn
+        self.summary = summary
+        self.signIn = signIn
+        self.join = join
+    }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Image(systemName: "link")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(RuuutoPalette.ink)
-                    .padding(14)
-                    .background(RuuutoPalette.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: 16))
-                    .accessibilityHidden(true)
+            VStack(spacing: 12) {
+                postcards
 
-                Text("グループへの招待")
-                    .font(.system(.title2, design: .rounded, weight: .bold))
-                    .foregroundStyle(RuuutoPalette.ink)
-                    .accessibilityAddTraits(.isHeader)
+                if let summary {
+                    Text(summary.groupName)
+                        .font(RuuutoType.rounded(.title2))
+                        .accessibilityAddTraits(.isHeader)
+                    if !summary.memberNames.isEmpty {
+                        avatars(for: summary.memberNames)
+                    }
+                } else {
+                    Text("グループへの招待")
+                        .font(RuuutoType.rounded(.title2))
+                        .accessibilityAddTraits(.isHeader)
+                }
 
-                invitationContent
+                VStack(spacing: 12) {
+                    invitationContent
+                }
+                .padding(.top, 10)
             }
-            .frame(maxWidth: 420, alignment: .leading)
-            .padding(20)
-            .background(.white, in: RoundedRectangle(cornerRadius: 24))
-            .overlay {
-                RoundedRectangle(cornerRadius: 24)
-                    .strokeBorder(RuuutoPalette.line, lineWidth: 1)
-                    .allowsHitTesting(false)
-            }
-            .padding(20)
+            .multilineTextAlignment(.center)
+            .foregroundStyle(RuuutoPalette.ink)
+            .frame(maxWidth: 390)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
         }
         .background(RuuutoPalette.page.ignoresSafeArea())
-        .navigationTitle("招待")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("招待")
+                    .font(RuuutoType.rounded(.title3))
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
+    }
+
+    private var postcards: some View {
+        let captions = summary?.postcardCaptions ?? []
+        return ZStack {
+            postcard(
+                caption: captions.first,
+                colors: (RuuutoPalette.soft, RuuutoPalette.line, RuuutoPalette.accent)
+            )
+            .rotationEffect(.degrees(-10))
+            .offset(x: -41, y: -6)
+
+            postcard(
+                caption: captions.dropFirst().first,
+                colors: (RuuutoPalette.line, RuuutoPalette.accent, RuuutoPalette.soft)
+            )
+            .rotationEffect(.degrees(9))
+            .offset(x: 41, y: 4)
+        }
+        .frame(height: 156)
+        .accessibilityHidden(true)
+    }
+
+    private func postcard(caption: String?, colors: (sky: Color, light: Color, ridge: Color)) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            LinearGradient(
+                stops: [
+                    .init(color: colors.sky, location: 0.12),
+                    .init(color: colors.light, location: 0.56),
+                    .init(color: colors.ridge, location: 0.57),
+                    .init(color: colors.light, location: 1)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+            .frame(height: 91)
+
+            Text(caption ?? "")
+                .font(RuuutoType.hand(.caption2))
+                .lineLimit(1)
+        }
+        .frame(width: 96, height: 111, alignment: .topLeading)
+        .padding(5)
+        .background(.white, in: RoundedRectangle(cornerRadius: 6))
+        .shadow(color: RuuutoPalette.ink.opacity(0.16), radius: 7, y: 5)
+    }
+
+    private func avatars(for members: [String]) -> some View {
+        HStack(spacing: -4) {
+            ForEach(Array(members.prefix(5).enumerated()), id: \.offset) { entry in
+                avatar(String(entry.element.prefix(1)))
+            }
+            if members.count > 5 {
+                avatar("+\(members.count - 5)")
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("メンバー\(members.count)人")
+    }
+
+    private func avatar(_ label: String) -> some View {
+        Text(label)
+            .font(RuuutoType.body(.caption2).weight(.bold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.65)
+            .frame(width: 25, height: 25)
+            .background(RuuutoPalette.line, in: Circle())
+            .overlay { Circle().strokeBorder(RuuutoPalette.page, lineWidth: 2) }
     }
 
     @ViewBuilder
     private var invitationContent: some View {
         if !signedIn {
             Text("ログインすると、この招待からグループに参加できます。")
+                .font(RuuutoType.body(.subheadline))
                 .foregroundStyle(RuuutoPalette.sub)
             invitationButton("ログインへ進む", action: signIn)
         } else {
@@ -68,7 +171,7 @@ struct JoinInvitationView: View {
                 ProgressView("参加中")
                     .tint(RuuutoPalette.ink)
                     .foregroundStyle(RuuutoPalette.ink)
-                    .padding(.vertical, 8)
+                    .frame(minHeight: 48)
             case .accepted:
                 invitationStatus("参加しました", icon: "checkmark.circle")
             case .invalid:
@@ -89,24 +192,28 @@ struct JoinInvitationView: View {
             Image(systemName: icon)
                 .accessibilityHidden(true)
         }
-        .foregroundStyle(RuuutoPalette.ink)
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RuuutoPalette.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        .font(RuuutoType.body(.subheadline))
+        .foregroundStyle(RuuutoPalette.sub)
+        .padding(.vertical, 8)
     }
 
     private func invitationButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(.body, design: .rounded, weight: .bold))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(RuuutoPalette.ink)
-                .frame(maxWidth: .infinity, minHeight: 48)
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(RuuutoType.rounded(.body))
+                Image(systemName: "arrow.right")
+                    .font(.body.weight(.semibold))
+                    .accessibilityHidden(true)
+            }
+            .foregroundStyle(RuuutoPalette.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .background(RuuutoPalette.accent, in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(RoundedRectangle(cornerRadius: 8))
         }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.roundedRectangle(radius: 14))
-        .controlSize(.large)
-        .tint(RuuutoPalette.accent)
+        .buttonStyle(.plain)
     }
 
     private func accept() async {
