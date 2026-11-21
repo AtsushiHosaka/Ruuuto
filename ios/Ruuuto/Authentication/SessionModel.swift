@@ -47,7 +47,16 @@ final class SessionModel {
     }
 
     func signOut() async throws {
-        try await client.auth.signOut(scope: .local)
-        state = .signedOut
+        let previousState = state
+        do {
+            try await client.auth.signOut(scope: .local)
+        } catch {
+            // The SDK removes the local session before calling the logout endpoint.
+            guard client.auth.currentSession == nil else { throw error }
+        }
+
+        if client.auth.currentSession == nil, state == previousState {
+            state = .signedOut
+        }
     }
 }
