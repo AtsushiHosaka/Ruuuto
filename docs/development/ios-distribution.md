@@ -10,6 +10,7 @@
 | --- | --- |
 | `RUUUTO_SUPABASE_HOST` | Project URLのホスト名だけ。例は `example.supabase.co` |
 | `RUUUTO_SUPABASE_PUBLISHABLE_KEY` | 対象環境のクライアント用キー |
+| `RUUUTO_INVITATION_HOST` | 招待用のHTTPSホスト名。Supabaseとは別に設定できる |
 | `DEVELOPMENT_TEAM` | 実機・配布ビルドを署名するApple Developer Team ID |
 | `PRODUCT_BUNDLE_IDENTIFIER` | 登録したApp IDが初期値と異なる場合に指定 |
 
@@ -44,9 +45,12 @@ TestFlightで配布したビルドを対象iPhoneにインストールし、起�
 
 | ワークフローの環境変数 | 値 |
 | --- | --- |
-| `RUUUTO_RELEASE_SUPABASE_HOST` | 配布用SupabaseのProject URLのホスト名 |
+| `RUUUTO_RELEASE_SUPABASE_URL` | 配布用SupabaseのProject URL。例は `https://example.supabase.co` |
 | `RUUUTO_RELEASE_SUPABASE_PUBLISHABLE_KEY` | 同じ環境の `sb_publishable_` で始まるキー |
+| `RUUUTO_RELEASE_INVITATION_HOST` | 招待用のHTTPSホスト名。Universal Links設定と同じ値を使う |
 | `RUUUTO_REQUIRE_SUPABASE_FOR_ARCHIVE` | 2つの接続値を必須にする配布ワークフローに `1` を設定 |
+
+`RUUUTO_RELEASE_SUPABASE_HOST` も使用できる。手元で実行するときは、Xcodeのスキームの環境変数に `RUUUTO_SUPABASE_URL` と `RUUUTO_SUPABASE_PUBLISHABLE_KEY` を設定できる。
 
 `ios/ci_scripts/ci_post_clone.sh` は、Xcode Cloud内で接続値を `ios/Configuration/Cloud.Release.xcconfig` に書き込む。ReleaseはこのGit管理外のファイルがあるときに読み込む。配布ワークフローで必須化した後は、接続値がそろわないArchiveを中断する。通常のBuildや必須化前のArchiveでは、接続値を両方省略できる。 [ビルドスクリプト](https://developer.apple.com/documentation/xcode/writing-custom-build-scripts) · [アクションの環境変数](https://developer.apple.com/documentation/xcode/environment-variable-reference)
 
