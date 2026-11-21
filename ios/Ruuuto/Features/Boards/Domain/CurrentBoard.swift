@@ -7,10 +7,3 @@ struct CurrentBoard: Identifiable, Equatable, Sendable {
     let opensAt: Date
     let closesAt: Date
 }
-
-enum CurrentBoardState: Equatable, Sendable {
-    case idle
-    case loading
-    case loaded(CurrentBoard)
-    case failed(String)
-}
