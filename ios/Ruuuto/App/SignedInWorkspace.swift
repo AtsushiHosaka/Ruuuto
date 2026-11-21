@@ -118,7 +118,8 @@ final class SignedInWorkspace {
 
     func closeTopicEditor() {
         guard destination == .editTopic, let editor = topicEditor else { return }
-        openBoard(groupID: editor.board.groupID)
+        topicEditor = nil
+        destination = .board(groupID: editor.board.groupID, boardID: nil)
     }
 
     func receiveInvitation(_ url: URL) {
