@@ -27,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000017 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -80,6 +81,9 @@
 				A10000000000000000000002 /* Ruuuto */,
 			);
 			name = Ruuuto;
+			packageProductDependencies = (
+				A10000000000000000000016 /* Supabase */,
+			);
 			productName = Ruuuto;
 			productReference = A10000000000000000000001 /* Ruuuto.app */;
 			productType = "com.apple.product-type.application";
@@ -102,6 +106,9 @@
 				Base,
 			);
 			mainGroup = A10000000000000000000004;
+			packageReferences = (
+				A10000000000000000000015 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000005 /* Products */;
 			projectDirPath = "";
@@ -223,6 +230,29 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000017 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000016 /* Supabase */; };
+/* End PBXBuildFile section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A10000000000000000000015 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.55.7;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A10000000000000000000016 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A10000000000000000000015 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000000000000000000009 /* Project object */;
 }
