@@ -2,6 +2,8 @@
 
 初回リリースの目標日は2026年11月25日。iPhone向けにTestFlightで配布する。遠くに住む友達が週ごとのお題に沿って写真を持ち寄り、一つのボードを共同編集する。 [Jiraの初回リリース](https://atsushi0130.atlassian.net/browse/RCNO-1) · [iOSの配布準備](docs/development/ios-distribution.md)
 
+GitHubの `main` 更新でXcode Cloudの配布ワークフローを起動し、指定したTestFlightの外部テスターグループに配布する。初回の外部配布はAppleのベータ審査を通過してから始まる。
+
 ## 要件
 
 | ID | 初回リリースで実現すること |
