@@ -14,7 +14,7 @@ struct InvitationAPI: Sendable {
         return response.token
     }
 
-    func accept(token: String) async throws -> UUID {
+    func accept(token: String) async throws -> InvitationAcceptance {
         _ = try await client.auth.session
         try Task.checkCancellation()
         do {
@@ -22,7 +22,10 @@ struct InvitationAPI: Sendable {
                 .rpc("ruuuto_accept_invitation", params: AcceptParameters(token: token))
                 .execute()
                 .value
-            return response.groupID
+            return InvitationAcceptance(
+                groupID: response.groupID,
+                membership: response.joined ? .joined : .alreadyMember
+            )
         } catch let error as PostgrestError {
             switch error.code {
             case "RC003": throw InvitationJoinError.invalid
@@ -54,9 +57,11 @@ struct InvitationAPI: Sendable {
 
     private struct AcceptedInvitation: Decodable {
         let groupID: UUID
+        let joined: Bool
 
         enum CodingKeys: String, CodingKey {
             case groupID = "group_id"
+            case joined
         }
     }
 }

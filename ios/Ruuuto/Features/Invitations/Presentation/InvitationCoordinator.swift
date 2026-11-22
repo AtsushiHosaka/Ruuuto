@@ -22,13 +22,13 @@ final class InvitationCoordinator {
 
     func accept(
         _ link: InvitationLink,
-        using join: (String) async throws -> UUID
-    ) async throws -> UUID? {
+        using join: (String) async throws -> InvitationAcceptance
+    ) async throws -> InvitationAcceptance? {
         guard pending == link else { return nil }
-        let groupID = try await join(link.token)
+        let acceptance = try await join(link.token)
         guard pending == link else { return nil }
         pending = nil
-        return groupID
+        return acceptance
     }
 
     func discard(_ link: InvitationLink) {

@@ -23,11 +23,14 @@ final class SignedInWorkspace {
 
     let notifications: NotificationSettingsViewModel
     let invitation: InvitationViewModel?
+    private(set) var invitationAcceptance: InvitationAcceptance?
+    var notificationRoutingState: NotificationRoutingState = .idle
     let invitationShare: InvitationShareViewModel
     var sharedInvitation: SharedInvitation?
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
     let session: SessionModel
+    var profile: ProfileViewModel { session.profile }
     let userID: UUID
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups
@@ -105,6 +108,20 @@ final class SignedInWorkspace {
 
     func showGroups() {
         navigate(to: .groups)
+    }
+
+    func openAcceptedInvitation(_ acceptance: InvitationAcceptance) {
+        openBoard(groupID: acceptance.groupID)
+        invitationAcceptance = acceptance
+    }
+
+    func clearInvitationAcceptance() {
+        invitationAcceptance = nil
+    }
+
+    func takeInvitationAcceptance() -> InvitationAcceptance? {
+        defer { clearInvitationAcceptance() }
+        return invitationAcceptance
     }
 
     func returnToSelectedBoard() {

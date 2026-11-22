@@ -34,6 +34,7 @@ struct AuthenticationView: View {
                 }
             }
             .task { await session.observe() }
+            .task(id: session.userID) { await session.profile.refresh() }
             .onChange(of: session.state) {
                 if case .signedOut = session.state {
                     notificationDelegate.pauseRemoteDelivery()

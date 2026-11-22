@@ -75,13 +75,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Check the prompt you entered."
+            "value": "Enter a prompt between 1 and 80 characters."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "お題の入力内容を確認してください。"
+            "value": "お題は1〜80文字で入力してください。"
           }
         }
       }
@@ -116,6 +116,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "グループを作成できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "groups.create.invalid_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a group name between 1 and 40 characters."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グループ名は1〜40文字で入力してください。"
           }
         }
       }

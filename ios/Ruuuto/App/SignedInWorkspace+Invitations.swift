@@ -5,6 +5,7 @@ extension SignedInWorkspace {
         guard isCurrentSession, let invitation else { return }
         invitation.setSignedInUser(userID)
         invitation.receive(url)
+        clearInvitationAcceptance()
         guard invitation.state == .ready else { return }
         navigate(to: .invitation)
     }
@@ -13,8 +14,8 @@ extension SignedInWorkspace {
         guard isCurrentSession, case .invitation = destination, let invitation else { return }
         await invitation.accept()
         guard isCurrentSession, !Task.isCancelled, case .invitation = destination,
-              let groupID = invitation.takeAcceptedGroupID() else { return }
-        openBoard(groupID: groupID)
+              let acceptance = invitation.takeAcceptance() else { return }
+        openAcceptedInvitation(acceptance)
         await groups.refresh()
     }
 
