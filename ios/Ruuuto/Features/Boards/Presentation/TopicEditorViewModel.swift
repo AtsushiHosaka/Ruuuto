@@ -76,13 +76,13 @@ final class TopicEditorViewModel {
     private func message(for error: Error) -> String {
         switch error as? TopicSaveError {
         case .forbidden:
-            "このお題を変更する権限がありません。"
+            String(localized: "boards.topic.forbidden")
         case .invalidTopic:
-            "お題の入力内容を確認してください。"
+            String(localized: "boards.topic.invalid")
         case .closedBoard:
-            "締切を過ぎたため、お題を変更できません。"
+            String(localized: "boards.topic.closed")
         case nil:
-            "お題を保存できませんでした。もう一度お試しください。"
+            String(localized: "boards.topic.save_failed")
         }
     }
 }

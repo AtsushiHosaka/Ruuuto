@@ -68,7 +68,7 @@ final class CreateGroupViewModel {
             state = .idle
             return nil
         } catch {
-            state = .failed("グループを作成できませんでした。もう一度お試しください。")
+            state = .failed(String(localized: "groups.create.failed"))
             return nil
         }
     }
