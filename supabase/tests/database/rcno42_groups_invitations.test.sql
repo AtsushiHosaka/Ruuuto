@@ -24,6 +24,8 @@ select is(
   (select opens_at from private.ruuuto_week_window('2026-11-22T15:59:59-08:00')),
   '2026-11-16T00:00:00Z'::timestamptz, 'バンクーバーの日曜 15:59 はまだ前の週');
 
+-- RCNO-4 の48件を外し、このテストのお題だけにする
+delete from public.topic_prompts;
 -- お題の初期データがなければ既定の文言
 select is((select topic from private.ruuuto_weekly_prompt('2026-11-16T00:00:00Z')), '今週の一枚', 'お題の初期データがなければ既定の文言');
 insert into public.topic_prompts (month, week, body) values (11, 3, '窓の外');

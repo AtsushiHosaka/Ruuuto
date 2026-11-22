@@ -14,6 +14,8 @@ insert into public.group_members (group_id, user_id, role) values
   ('41000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000041a1', 'owner'),
   ('41000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-0000000041b1', 'member');
 
+-- RCNO-4 の48件を外し、このテストのお題だけにする
+delete from public.topic_prompts;
 insert into public.topic_prompts (id, month, week, body) values
   ('41300000-0000-0000-0000-000000000001', 11, 3, '窓の外');
 insert into public.boards (id, group_id, topic, topic_source, prompt_id, opens_at, closes_at, status, closed_at) values

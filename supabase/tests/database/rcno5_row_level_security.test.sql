@@ -41,6 +41,8 @@ insert into public.invitations (group_id, token_hash, created_by, expires_at) va
   ('50000000-0000-0000-0000-000000000001', extensions.digest('test-token', 'sha256'),
    '00000000-0000-0000-0000-0000000005a1', now() + interval '7 days');
 
+-- RCNO-4 の48件を外し、このテストのお題だけにする
+delete from public.topic_prompts;
 insert into public.topic_prompts (month, week, body) values (11, 4, '窓の外');
 
 create function pg_temp.act_as(p_user uuid) returns void language sql as $$
