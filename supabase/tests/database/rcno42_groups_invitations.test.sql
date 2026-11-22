@@ -13,21 +13,21 @@ create function pg_temp.act_as(p_user uuid) returns void language sql as $$
     json_build_object('sub', p_user, 'role', 'authenticated')::text, true);
 $$;
 
--- 週の区切り（暫定: 日本時間の月曜0時から7日間）
+-- 週の区切り（RCNO-10 で「月曜 00:00 UTC」に決定）
 select is(
   (select opens_at from private.ruuuto_week_window('2026-11-22T12:00:00+09:00')),
-  '2026-11-16T00:00:00+09:00'::timestamptz, '日曜の昼は、その週の月曜0時（日本時間）に始まる週');
+  '2026-11-16T00:00:00Z'::timestamptz, '日本時間の日曜昼は、その週の月曜 00:00 UTC に始まる週');
 select is(
-  (select closes_at from private.ruuuto_week_window('2026-11-23T00:00:00+09:00')),
-  '2026-11-30T00:00:00+09:00'::timestamptz, '月曜0時ちょうどは新しい週。締切は7日後');
+  (select closes_at from private.ruuuto_week_window('2026-11-23T00:00:00Z')),
+  '2026-11-30T00:00:00Z'::timestamptz, '月曜 00:00 UTC ちょうどは新しい週。締切は7日後');
 select is(
-  (select opens_at from private.ruuuto_week_window('2026-11-22T14:59:59Z')),
-  '2026-11-16T00:00:00+09:00'::timestamptz, 'バンクーバーの日曜夕方（UTC 14:59）も同じ週');
+  (select opens_at from private.ruuuto_week_window('2026-11-22T15:59:59-08:00')),
+  '2026-11-16T00:00:00Z'::timestamptz, 'バンクーバーの日曜 15:59 はまだ前の週');
 
 -- お題の初期データがなければ既定の文言
-select is((select topic from private.ruuuto_weekly_prompt('2026-11-16T00:00:00+09:00')), '今週の一枚', 'お題の初期データがなければ既定の文言');
+select is((select topic from private.ruuuto_weekly_prompt('2026-11-16T00:00:00Z')), '今週の一枚', 'お題の初期データがなければ既定の文言');
 insert into public.topic_prompts (month, week, body) values (11, 3, '窓の外');
-select is((select topic from private.ruuuto_weekly_prompt('2026-11-16T00:00:00+09:00')), '窓の外', '11月16日は11月の第3週のお題');
+select is((select topic from private.ruuuto_weekly_prompt('2026-11-16T00:00:00Z')), '窓の外', '11月16日は11月の第3週のお題');
 
 set local role authenticated;
 
