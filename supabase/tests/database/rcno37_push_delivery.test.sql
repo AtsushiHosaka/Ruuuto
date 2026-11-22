@@ -119,9 +119,10 @@ insert into public.devices (installation_id, user_id, apns_token, environment, l
 insert into public.notification_events (id, kind, group_id, board_id, topic) values
   ('37400000-0000-0000-0000-000000000001', 'topic_published', '37000000-0000-0000-0000-000000000001',
    '37100000-0000-0000-0000-000000000001', '窓の外');
-insert into public.notification_deliveries (event_id, device_id, user_id, title, body) values
-  ('37400000-0000-0000-0000-000000000001', '37300000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000037a1', '今週のお題', '窓の外'),
-  ('37400000-0000-0000-0000-000000000001', '37300000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000037b1', 'This week''s topic', '窓の外');
+-- 受け取る順（送る時刻・ID順）がそろうよう、IDを決めておく
+insert into public.notification_deliveries (id, event_id, device_id, user_id, title, body) values
+  ('37500000-0000-0000-0000-000000000001', '37400000-0000-0000-0000-000000000001', '37300000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000037a1', '今週のお題', '窓の外'),
+  ('37500000-0000-0000-0000-000000000002', '37400000-0000-0000-0000-000000000001', '37300000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-0000000037b1', 'This week''s topic', '窓の外');
 
 select throws_ok(
   $$ insert into public.notification_deliveries (event_id, device_id, user_id, title, body) values
