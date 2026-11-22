@@ -29,6 +29,9 @@ struct SignedInView: View {
                 }
             }
             .task { await workspace.start() }
+            .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
+                await workspace.currentBoard.selectGroup(groupID)
+            }
             .alert(Text("auth.sign_out.failure.title", tableName: "Authentication"), isPresented: $signOutError) {
                 Button(role: .cancel) {} label: {
                     Text("auth.action.close", tableName: "Authentication")

@@ -11,10 +11,12 @@ final class SignedInWorkspace {
     }
 
     let groups: GroupDirectoryViewModel
+    let currentBoard: CurrentBoardViewModel
     private let session: SessionModel
     private let userID: UUID
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups
+    private(set) var boardLoadRequestID: UUID?
     private(set) var isSigningOut = false
     private(set) var groupCreation: CreateGroupViewModel?
     @ObservationIgnored private var groupCreationID: UUID?
@@ -25,6 +27,7 @@ final class SignedInWorkspace {
         self.defaults = defaults
         let client = session.client
         groups = GroupDirectoryViewModel(loadGroups: { try await GroupDirectoryAPI.list(client: client) })
+        currentBoard = CurrentBoardViewModel(loadBoard: { try await CurrentBoardAPI.load(client: client, groupID: $0) })
     }
 
     func start() async {
@@ -96,5 +99,6 @@ final class SignedInWorkspace {
         groups.selectGroup(id: groupID)
         defaults.set(groupID.uuidString, forKey: groupSelectionKey)
         destination = .board(groupID: groupID, boardID: boardID)
+        boardLoadRequestID = UUID()
     }
 }
