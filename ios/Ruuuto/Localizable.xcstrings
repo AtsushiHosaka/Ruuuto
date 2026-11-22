@@ -1,0 +1,57 @@
+{
+  "sourceLanguage": "ja",
+  "strings": {
+    "boards.current.group_mismatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t open the board for the selected group."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選んだグループのボードを表示できませんでした。"
+          }
+        }
+      }
+    },
+    "boards.current.load_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t load the prompt."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お題を取得できませんでした。"
+          }
+        }
+      }
+    },
+    "groups.create.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t create the group. Try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グループを作成できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

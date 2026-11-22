@@ -1,9 +1,23 @@
 import SwiftUI
 
 struct LoginView: View {
-    enum Mode: String, CaseIterable {
-        case signIn = "ログイン"
-        case signUp = "アカウントを作成"
+    enum Mode: CaseIterable {
+        case signIn
+        case signUp
+
+        var title: Text {
+            switch self {
+            case .signIn: Text("auth.action.sign_in", tableName: "Authentication")
+            case .signUp: Text("auth.action.sign_up", tableName: "Authentication")
+            }
+        }
+
+        var failureMessage: Text {
+            switch self {
+            case .signIn: Text("auth.sign_in.failure", tableName: "Authentication")
+            case .signUp: Text("auth.sign_up.failure", tableName: "Authentication")
+            }
+        }
     }
 
     let signIn: (String, String) async throws -> Void
@@ -18,7 +32,7 @@ struct LoginView: View {
         case idle
         case submitting
         case confirmationRequired
-        case failed(String)
+        case failed(Mode)
     }
 
     @FocusState private var focus: Field?
@@ -32,7 +46,7 @@ struct LoginView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 LoginArtwork()
-                Text("Ruuuto")
+                Text(verbatim: "Ruuuto")
                     .font(.system(.largeTitle, design: .rounded, weight: .heavy))
                     .accessibilityAddTraits(.isHeader)
                 authenticationCard
@@ -61,22 +75,25 @@ struct LoginView: View {
 
     private var authenticationCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Picker("手続き", selection: $mode) {
+            Picker(selection: $mode) {
                 ForEach(Mode.allCases, id: \.self) { option in
-                    Text(option.rawValue).tag(option)
+                    option.title.tag(option)
                 }
+            } label: {
+                Text("auth.mode.label", tableName: "Authentication")
             }
             .pickerStyle(.segmented)
             .disabled(submitting)
 
             VStack(alignment: .leading, spacing: 8) {
-                fieldLabel("メールアドレス")
+                fieldLabel(emailLabel)
                 TextField(
-                    "メールアドレス",
                     text: $email,
-                    prompt: Text("name@example.com").foregroundStyle(RuuutoPalette.muted)
-                )
-                .accessibilityLabel("メールアドレス")
+                    prompt: Text(verbatim: "name@example.com").foregroundStyle(RuuutoPalette.muted)
+                ) {
+                    emailLabel
+                }
+                .accessibilityLabel(emailLabel)
                 .disabled(submitting)
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
@@ -91,13 +108,15 @@ struct LoginView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                fieldLabel("パスワード")
+                fieldLabel(passwordLabel)
                 SecureField(
-                    "パスワード",
                     text: $password,
-                    prompt: Text("パスワードを入力").foregroundStyle(RuuutoPalette.muted)
-                )
-                .accessibilityLabel("パスワード")
+                    prompt: Text("auth.password.prompt", tableName: "Authentication")
+                        .foregroundStyle(RuuutoPalette.muted)
+                ) {
+                    passwordLabel
+                }
+                .accessibilityLabel(passwordLabel)
                 .disabled(submitting)
                 .textContentType(mode == .signIn ? .password : .newPassword)
                 .submitLabel(.go)
@@ -109,12 +128,20 @@ struct LoginView: View {
             }
 
             switch submission {
-            case .failed(let message):
-                Label(message, systemImage: "exclamationmark.circle")
-                    .font(.subheadline)
+            case .failed(let failedMode):
+                Label {
+                    failedMode.failureMessage
+                } icon: {
+                    Image(systemName: "exclamationmark.circle")
+                }
+                .font(.subheadline)
             case .confirmationRequired:
-                Label("確認メールを開き、アカウントを確認してからログインしてください。", systemImage: "envelope")
-                    .font(.subheadline)
+                Label {
+                    Text("auth.sign_up.confirm_email", tableName: "Authentication")
+                } icon: {
+                    Image(systemName: "envelope")
+                }
+                .font(.subheadline)
             case .idle, .submitting:
                 EmptyView()
             }
@@ -126,9 +153,9 @@ struct LoginView: View {
                     if submitting {
                         ProgressView()
                             .tint(RuuutoPalette.ink)
-                            .accessibilityLabel("送信中")
+                            .accessibilityLabel(Text("auth.submission.in_progress", tableName: "Authentication"))
                     } else {
-                        Text(mode.rawValue)
+                        mode.title
                             .font(.system(.headline, design: .rounded))
                     }
                 }
@@ -147,8 +174,16 @@ struct LoginView: View {
         .background(RuuutoPalette.soft, in: RoundedRectangle(cornerRadius: 24))
     }
 
-    private func fieldLabel(_ title: String) -> some View {
-        Text(title)
+    private var emailLabel: Text {
+        Text("auth.email.label", tableName: "Authentication")
+    }
+
+    private var passwordLabel: Text {
+        Text("auth.password.label", tableName: "Authentication")
+    }
+
+    private func fieldLabel(_ title: Text) -> some View {
+        title
             .font(.subheadline.weight(.semibold))
             .foregroundStyle(RuuutoPalette.muted)
             .accessibilityHidden(true)
@@ -183,9 +218,7 @@ struct LoginView: View {
         } catch is CancellationError {
             return
         } catch {
-            submission = .failed(mode == .signIn
-                ? "ログインできませんでした。メールアドレス、パスワード、メールの確認状況を確かめてください。"
-                : "アカウントを作成できませんでした。メールアドレスとパスワードを確認してください。")
+            submission = .failed(mode)
         }
     }
 }
