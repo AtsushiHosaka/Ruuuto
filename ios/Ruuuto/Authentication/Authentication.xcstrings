@@ -1,0 +1,312 @@
+{
+  "sourceLanguage": "ja",
+  "strings": {
+    "auth.action.close": {
+      "comment": "Dismisses the sign-out error alert.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉じる"
+          }
+        }
+      }
+    },
+    "auth.action.sign_in": {
+      "comment": "Sign-in form selection and submit button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン"
+          }
+        }
+      }
+    },
+    "auth.action.sign_out": {
+      "comment": "Signs out of the active session.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログアウト"
+          }
+        }
+      }
+    },
+    "auth.action.sign_up": {
+      "comment": "Account creation form selection and submit button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create account"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントを作成"
+          }
+        }
+      }
+    },
+    "auth.configuration.missing.help": {
+      "comment": "Explains how to resolve missing Supabase configuration.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact the development team for the connection settings."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "開発チームに接続先を確認してください。"
+          }
+        }
+      }
+    },
+    "auth.configuration.missing.title": {
+      "comment": "Shown when the app cannot configure the authentication service.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection settings missing"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続設定がありません"
+          }
+        }
+      }
+    },
+    "auth.email.label": {
+      "comment": "Visible label and accessibility name for the email field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email address"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メールアドレス"
+          }
+        }
+      }
+    },
+    "auth.mode.label": {
+      "comment": "Accessibility name for the sign-in and account creation picker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account action"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手続き"
+          }
+        }
+      }
+    },
+    "auth.password.label": {
+      "comment": "Visible label and accessibility name for the secure password field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワード"
+          }
+        }
+      }
+    },
+    "auth.password.prompt": {
+      "comment": "Placeholder in the secure password field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter your password"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パスワードを入力"
+          }
+        }
+      }
+    },
+    "auth.session.restoring": {
+      "comment": "Progress shown while restoring an existing session.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking your sign-in status"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン状態を確認中"
+          }
+        }
+      }
+    },
+    "auth.sign_in.failure": {
+      "comment": "Generic sign-in error with next steps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't sign in. Check your email address and password and make sure you've confirmed your email."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログインできませんでした。メールアドレス、パスワード、メールの確認状況を確かめてください。"
+          }
+        }
+      }
+    },
+    "auth.sign_out.failure.retry": {
+      "comment": "Recovery steps in the sign-out error alert.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection and try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通信を確認して、もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "auth.sign_out.failure.title": {
+      "comment": "Title of the sign-out error alert.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't sign out"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログアウトできませんでした"
+          }
+        }
+      }
+    },
+    "auth.sign_up.confirm_email": {
+      "comment": "Shown after account creation when email confirmation is required.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the confirmation email and verify your account before signing in."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "確認メールを開き、アカウントを確認してからログインしてください。"
+          }
+        }
+      }
+    },
+    "auth.sign_up.failure": {
+      "comment": "Generic account creation error with next steps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't create an account. Check your email address and password."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アカウントを作成できませんでした。メールアドレスとパスワードを確認してください。"
+          }
+        }
+      }
+    },
+    "auth.submission.in_progress": {
+      "comment": "VoiceOver label while the sign-in or account creation request is in progress.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Submitting"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "送信中"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
