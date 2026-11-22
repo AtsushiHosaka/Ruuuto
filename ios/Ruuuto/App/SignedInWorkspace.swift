@@ -8,9 +8,20 @@ final class SignedInWorkspace {
         case groups
         case createGroup
         case editTopic
+        case invitation
+        case inviteSharing
         case board(groupID: UUID, boardID: UUID?)
     }
 
+    struct SharedInvitation: Identifiable {
+        let id = UUID()
+        let url: URL
+    }
+
+    let invitation: InvitationViewModel?
+    private(set) var invitationAcceptance: InvitationAcceptance?
+    let invitationShare: InvitationShareViewModel
+    var sharedInvitation: SharedInvitation?
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
     private let session: SessionModel
@@ -24,11 +35,20 @@ final class SignedInWorkspace {
     private(set) var groupCreation: CreateGroupViewModel?
     @ObservationIgnored private var groupCreationID: UUID?
 
-    init(session: SessionModel, userID: UUID, defaults: UserDefaults = .standard) {
+    init(session: SessionModel, userID: UUID, invitationOrigin: URL?, defaults: UserDefaults = .standard) {
         self.session = session
         self.userID = userID
         self.defaults = defaults
         let client = session.client
+        let invitationAPI = InvitationAPI(client: client)
+        invitation = InvitationLink.allowedHTTPSOrigin(invitationOrigin).map {
+            InvitationViewModel(
+                coordinator: InvitationCoordinator(origin: $0, pathPrefix: InvitationLink.pathPrefix),
+                join: invitationAPI.accept(token:)
+            )
+        }
+        invitationShare = InvitationShareViewModel(origin: invitationOrigin, issue: invitationAPI.issue(groupID:))
+        invitation?.setSignedInUser(userID)
         groups = GroupDirectoryViewModel(loadGroups: { try await GroupDirectoryAPI.list(client: client) })
         currentBoard = CurrentBoardViewModel(loadBoard: { try await CurrentBoardAPI.load(client: client, groupID: $0) })
     }
@@ -104,7 +124,66 @@ final class SignedInWorkspace {
         destination = .board(groupID: editor.board.groupID, boardID: nil)
     }
 
+    func receiveInvitation(_ url: URL) {
+        guard isCurrentSession, let invitation else { return }
+        invitation.receive(url)
+        invitationAcceptance = nil
+        guard invitation.state == .ready else { return }
+        invitationShare.selectGroup(nil)
+        sharedInvitation = nil
+        destination = .invitation
+    }
+
+    func acceptInvitation() async {
+        guard isCurrentSession, destination == .invitation, let invitation else { return }
+        await invitation.accept()
+        guard isCurrentSession, !Task.isCancelled, destination == .invitation,
+              let acceptance = invitation.takeAcceptance() else { return }
+        openAcceptedInvitation(acceptance)
+        await groups.refresh()
+    }
+
+    func openAcceptedInvitation(_ acceptance: InvitationAcceptance) {
+        openBoard(groupID: acceptance.groupID)
+        invitationAcceptance = acceptance
+    }
+
+    func takeInvitationAcceptance() -> InvitationAcceptance? {
+        defer { invitationAcceptance = nil }
+        return invitationAcceptance
+    }
+
+    func showInvitationSharing() {
+        guard isCurrentSession, let groupID = groups.selectedID,
+              groups.groups.contains(where: { $0.id == groupID }) else { return }
+        invitationShare.selectGroup(groupID)
+        destination = .inviteSharing
+    }
+
+    func shareInvitation() {
+        guard isCurrentSession, destination == .inviteSharing, let url = invitationShare.shareURL else { return }
+        sharedInvitation = SharedInvitation(url: url)
+    }
+
+    func closeInvitation() {
+        guard destination == .invitation || destination == .inviteSharing else { return }
+        if let groupID = groups.selectedID {
+            openBoard(groupID: groupID)
+        } else {
+            showGroups()
+        }
+    }
+
+    private func clearInvitationFlow() {
+        if destination == .invitation {
+            invitation?.discard()
+        }
+        invitationShare.selectGroup(nil)
+        sharedInvitation = nil
+    }
+
     func showGroups() {
+        clearInvitationFlow()
         topicEditor = nil
         groupCreation = nil
         groupCreationID = nil
@@ -128,6 +207,7 @@ final class SignedInWorkspace {
 
     private func openBoard(groupID: UUID, boardID: UUID? = nil) {
         guard isCurrentSession else { return }
+        clearInvitationFlow()
         topicEditor = nil
         groupCreation = nil
         groupCreationID = nil

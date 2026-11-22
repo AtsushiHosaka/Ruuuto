@@ -2,9 +2,12 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @State private var session: SessionModel?
+    @State private var pendingInvitation: InvitationLink?
+    private let invitationOrigin: URL?
 
     init(configuration: AppConfiguration? = AppConfiguration()) {
         _session = State(initialValue: configuration.map(SessionModel.init))
+        invitationOrigin = configuration?.invitationOrigin
     }
 
     var body: some View {
@@ -18,12 +21,23 @@ struct AuthenticationView: View {
                 case .signedOut:
                     LoginView(signIn: session.signIn, signUp: session.signUp)
                 case .signedIn(let userID):
-                    SignedInView(session: session, userID: userID)
+                    SignedInView(
+                        session: session,
+                        userID: userID,
+                        invitationOrigin: invitationOrigin,
+                        pendingInvitation: $pendingInvitation
+                    )
                         .id(userID)
                 }
             }
             .task { await session.observe() }
             .task(id: session.userID) { await session.profile.refresh() }
+            .onOpenURL { url in
+                guard let invitationOrigin,
+                      let link = InvitationLink(url: url, allowedOrigin: invitationOrigin,
+                                                pathPrefix: InvitationLink.pathPrefix) else { return }
+                pendingInvitation = link
+            }
         } else {
             ContentUnavailableView {
                 Label {
