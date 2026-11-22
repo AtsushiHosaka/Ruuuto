@@ -1,0 +1,24 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "NSCameraUsageDescription" : {
+      "comment" : "Purpose shown by iOS when the app requests camera access.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruuuto uses the camera to take photos for the prompt and post them to your group’s board."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お題に合う写真を撮り、グループのボードに投稿するためにカメラを使います。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

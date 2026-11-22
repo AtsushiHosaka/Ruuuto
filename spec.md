@@ -1,8 +1,10 @@
-# ルートアプリ 初回リリース仕様案
+# Ruuuto 初回リリース仕様案
 
 初回リリースの目標日は2026年11月25日。iPhone向けにTestFlightで配布する。遠くに住む友達が週ごとのお題に沿って写真を持ち寄り、一つのボードを共同編集する。 [Jiraの初回リリース](https://atsushi0130.atlassian.net/browse/RCNO-1) · [iOSの配布準備](docs/development/ios-distribution.md)
 
 GitHubの `main` 更新でXcode Cloudの配布ワークフローを起動し、指定したTestFlightの外部テスターグループに配布する。初回の外部配布はAppleのベータ審査を通過してから始まる。
+
+アプリ名はすべての言語で「Ruuuto」とする。表示言語はiOSの設定に従い、日本語を既定として英語にも対応する。利用者が入力した名前・お題・投稿の文言は入力どおりに表示する。 [iOSの表示言語](docs/development/ios-localization.md)
 
 ## 要件
 
