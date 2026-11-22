@@ -431,3 +431,7 @@ enabled = true
 # RCNO-35 消し残した画像の片付け。Cron から合言葉ヘッダー付きで呼ぶので、JWT の検証はしない。
 [functions.photo-cleanup]
 verify_jwt = false
+
+# RCNO-37 プッシュ通知の配信。Cron から合言葉ヘッダー付きで呼ぶので、JWT の検証はしない。
+[functions.push-dispatch]
+verify_jwt = false
