@@ -7,6 +7,7 @@ final class SignedInWorkspace {
     enum Destination: Equatable {
         case groups
         case createGroup
+        case editTopic
         case board(groupID: UUID, boardID: UUID?)
     }
 
@@ -19,6 +20,7 @@ final class SignedInWorkspace {
     private(set) var destination: Destination = .groups
     private(set) var boardLoadRequestID: UUID?
     private(set) var isSigningOut = false
+    private(set) var topicEditor: TopicEditorViewModel?
     private(set) var groupCreation: CreateGroupViewModel?
     @ObservationIgnored private var groupCreationID: UUID?
 
@@ -72,7 +74,38 @@ final class SignedInWorkspace {
         destination = .createGroup
     }
 
+    func showTopicEditor() {
+        guard isCurrentSession,
+              case let .board(groupID, nil) = destination,
+              case let .loaded(board) = currentBoard.state(for: groupID) else { return }
+
+        let client = session.client
+        topicEditor = TopicEditorViewModel(
+            board: board,
+            saveTopic: { try await TopicEditorAPI.save(client: client, boardID: $0, topic: $1) },
+            reloadBoard: { [weak self] id in
+                guard let self, self.isCurrentSession else { return }
+                await self.currentBoard.reload(for: id)
+            }
+        )
+        destination = .editTopic
+    }
+
+    func saveTopic() async {
+        guard isCurrentSession, destination == .editTopic, let editor = topicEditor else { return }
+        guard await editor.saveChanges(), isCurrentSession, !Task.isCancelled,
+              destination == .editTopic, topicEditor === editor else { return }
+        closeTopicEditor()
+    }
+
+    func closeTopicEditor() {
+        guard destination == .editTopic, let editor = topicEditor else { return }
+        topicEditor = nil
+        destination = .board(groupID: editor.board.groupID, boardID: nil)
+    }
+
     func showGroups() {
+        topicEditor = nil
         groupCreation = nil
         groupCreationID = nil
         destination = .groups
@@ -95,6 +128,7 @@ final class SignedInWorkspace {
 
     private func openBoard(groupID: UUID, boardID: UUID? = nil) {
         guard isCurrentSession else { return }
+        topicEditor = nil
         groupCreation = nil
         groupCreationID = nil
         groups.selectGroup(id: groupID)

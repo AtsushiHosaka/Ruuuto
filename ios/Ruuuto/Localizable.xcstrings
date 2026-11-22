@@ -35,6 +35,74 @@
         }
       }
     },
+    "boards.topic.closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This prompt can’t be changed after the deadline."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "締切を過ぎたため、お題を変更できません。"
+          }
+        }
+      }
+    },
+    "boards.topic.forbidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You don’t have permission to change this prompt."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このお題を変更する権限がありません。"
+          }
+        }
+      }
+    },
+    "boards.topic.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a prompt between 1 and 80 characters."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お題は1〜80文字で入力してください。"
+          }
+        }
+      }
+    },
+    "boards.topic.save_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t save the prompt. Try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お題を保存できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    },
     "groups.create.failed": {
       "extractionState": "manual",
       "localizations": {
