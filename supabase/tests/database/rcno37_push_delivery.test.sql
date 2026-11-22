@@ -3,7 +3,7 @@
 -- 配信行の一意性、受け取りと結果の記録、無効な端末の除外、再送の間隔、管理用RPCの権限。
 -- トークンは試験用の明らかな偽物（同じ文字の繰り返し）を使う。
 begin;
-select plan(52);
+select plan(53);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000037a1', 'push-a@example.com'),
@@ -129,8 +129,8 @@ select throws_ok(
   '23505', null, '同じイベントを同じ端末へ送る行は1つだけ');
 
 set local role service_role;
-select is(public.ruuuto_admin_push_fanout()::jsonb, '{"events": 0, "deliveries": 0}'::jsonb,
-  'fanout はこの課題では何もしない（RCNO-9 で置き換える）');
+select lives_ok($$ select public.ruuuto_admin_push_fanout() $$, 'fanout を呼べる（中身は RCNO-9）');
+select is((select count(*)::int from public.notification_deliveries), 2, 'fanout は既にある配信行を重複させない');
 
 create temp table claim1 as select public.ruuuto_admin_push_claim(10)::jsonb as c;
 select is(jsonb_array_length((select c from claim1)), 2, '受け取り: 送る時刻の2件を受け取る');
