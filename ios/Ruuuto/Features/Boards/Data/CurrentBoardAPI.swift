@@ -3,11 +3,15 @@ import Supabase
 
 enum CurrentBoardAPI {
     static func load(client: SupabaseClient, groupID: UUID) async throws -> CurrentBoard {
-        let board: CurrentBoardDTO = try await client
-            .rpc("ruuuto_current_board", params: ["p_group_id": groupID])
-            .execute()
-            .value
-        return board.model
+        do {
+            let board: CurrentBoardDTO = try await client
+                .rpc("ruuuto_current_board", params: ["p_group_id": groupID])
+                .execute()
+                .value
+            return board.model
+        } catch let error as PostgrestError where error.code == "P0002" {
+            throw CurrentBoardLoadError.noActiveBoard
+        }
     }
 }
 
