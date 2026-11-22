@@ -34,6 +34,10 @@ xcodebuild -project ios/Ruuuto.xcodeproj -scheme Ruuuto \
 
 iOSはFeature-based MVVMで機能ごとにまとめ、Clean Architectureの依存方向に沿ってPresentation・Domain・Dataを分ける。画面状態はViewModel、Supabase接続はData、依存の組み立てと画面遷移はAppで扱う。配置先、依存関係、Repositoryの契約、接続時の確認事項は [iOSアーキテクチャ](docs/development/architecture.md) に従う。
 
+## 国際化
+
+利用者に表示する固定文言を追加・変更するPRでは、日本語と英語を登録し、両言語で表示を確認する。見出しやボタンに加え、エラー、空状態、アクセシビリティラベル、権限と通知の文言も対象とする。アプリ名はどちらの言語でもRuuutoとする。サーバーはクライアントが言語に応じて表示を選べるよう、エラーコードや構造化データを返す。 [iOSの表示言語](docs/development/ios-localization.md)
+
 ## Supabaseプロジェクトを用意する
 
 あゆむは既存のチーム用プロジェクトがあるか確認する。新規の場合は [Supabaseのプロジェクト作成画面](https://supabase.com/dashboard/new) から、チームが管理できる組織に検証用を作る。組織、リージョン、プランと配布用の分離方法はチーム内で決める。配布用に切り替える前に、検証用でマイグレーションと権限を確認する。 [環境の課題](https://atsushi0130.atlassian.net/browse/RCNO-39)
