@@ -1,0 +1,125 @@
+{
+  "sourceLanguage": "ja",
+  "strings": {
+    "boards.current.group_mismatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t open the board for the selected group."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選んだグループのボードを表示できませんでした。"
+          }
+        }
+      }
+    },
+    "boards.current.load_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t load the prompt."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お題を取得できませんでした。"
+          }
+        }
+      }
+    },
+    "boards.topic.closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This prompt can’t be changed after the deadline."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "締切を過ぎたため、お題を変更できません。"
+          }
+        }
+      }
+    },
+    "boards.topic.forbidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You don’t have permission to change this prompt."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このお題を変更する権限がありません。"
+          }
+        }
+      }
+    },
+    "boards.topic.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the prompt you entered."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お題の入力内容を確認してください。"
+          }
+        }
+      }
+    },
+    "boards.topic.save_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t save the prompt. Try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "お題を保存できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "groups.create.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t create the group. Try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グループを作成できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
