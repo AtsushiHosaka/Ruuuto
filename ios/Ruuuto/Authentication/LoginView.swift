@@ -23,6 +23,9 @@ struct LoginView: View {
     let signIn: (String, String) async throws -> Void
     let signUp: (String, String) async throws -> Bool
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var wordmarkSize = 54
+
     @State private var mode = Mode.signIn
     @State private var email = ""
     @State private var password = ""
@@ -35,29 +38,24 @@ struct LoginView: View {
         case failed(Mode)
     }
 
-    @FocusState private var focus: Field?
-
-    private enum Field {
-        case email
-        case password
-    }
+    @FocusState private var focus: LoginCredentialFields.Field?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                LoginArtwork()
-                Text(verbatim: "Ruuuto")
-                    .font(.system(.largeTitle, design: .rounded, weight: .heavy))
-                    .accessibilityAddTraits(.isHeader)
-                authenticationCard
+                brand
+                authenticationForm
             }
             .frame(maxWidth: 420)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
             .padding(.vertical, 24)
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(RuuutoPalette.ink.ignoresSafeArea())
+        .background {
+            LoginBackground()
+                .ignoresSafeArea()
+        }
         .foregroundStyle(.white)
         .toolbar(.hidden, for: .navigationBar)
         .preferredColorScheme(.dark)
@@ -73,120 +71,120 @@ struct LoginView: View {
         }
     }
 
-    private var authenticationCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Picker(selection: $mode) {
-                ForEach(Mode.allCases, id: \.self) { option in
-                    option.title.tag(option)
-                }
-            } label: {
-                Text("auth.mode.label", tableName: "Authentication")
-            }
-            .pickerStyle(.segmented)
-            .disabled(submitting)
+    private var brand: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            LoginArtwork()
+                .frame(maxWidth: .infinity, alignment: .trailing)
 
-            VStack(alignment: .leading, spacing: 8) {
-                fieldLabel(emailLabel)
-                TextField(
-                    text: $email,
-                    prompt: Text(verbatim: "name@example.com").foregroundStyle(RuuutoPalette.muted)
-                ) {
-                    emailLabel
-                }
-                .accessibilityLabel(emailLabel)
-                .disabled(submitting)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.next)
-                .focused($focus, equals: .email)
-                .onSubmit { focus = .password }
-                .padding(12)
-                .frame(minHeight: 48)
-                .background(RuuutoPalette.ink, in: RoundedRectangle(cornerRadius: 12))
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                fieldLabel(passwordLabel)
-                SecureField(
-                    text: $password,
-                    prompt: Text("auth.password.prompt", tableName: "Authentication")
-                        .foregroundStyle(RuuutoPalette.muted)
-                ) {
-                    passwordLabel
-                }
-                .accessibilityLabel(passwordLabel)
-                .disabled(submitting)
-                .textContentType(mode == .signIn ? .password : .newPassword)
-                .submitLabel(.go)
-                .focused($focus, equals: .password)
-                .onSubmit { Task { await submit() } }
-                .padding(12)
-                .frame(minHeight: 48)
-                .background(RuuutoPalette.ink, in: RoundedRectangle(cornerRadius: 12))
-            }
-
-            switch submission {
-            case .failed(let failedMode):
-                Label {
-                    failedMode.failureMessage
-                } icon: {
-                    Image(systemName: "exclamationmark.circle")
-                }
-                .font(.subheadline)
-            case .confirmationRequired:
-                Label {
-                    Text("auth.sign_up.confirm_email", tableName: "Authentication")
-                } icon: {
-                    Image(systemName: "envelope")
-                }
-                .font(.subheadline)
-            case .idle, .submitting:
-                EmptyView()
-            }
-
-            Button {
-                Task { await submit() }
-            } label: {
-                Group {
-                    if submitting {
-                        ProgressView()
-                            .tint(RuuutoPalette.ink)
-                            .accessibilityLabel(Text("auth.submission.in_progress", tableName: "Authentication"))
-                    } else {
-                        mode.title
-                            .font(.system(.headline, design: .rounded))
-                    }
-                }
-                .frame(maxWidth: .infinity, minHeight: 50)
-                .foregroundStyle(RuuutoPalette.ink)
-                .background(
-                    canSubmit || submitting ? RuuutoPalette.accent : RuuutoPalette.muted,
-                    in: RoundedRectangle(cornerRadius: 14)
-                )
-                .opacity(canSubmit || submitting ? 1 : 0.75)
-            }
-            .buttonStyle(.plain)
-            .disabled(!canSubmit)
+            Text(verbatim: "Ruuuto")
+                .font(.system(size: wordmarkSize, weight: .heavy, design: .rounded))
+                .tracking(-wordmarkSize * 0.04)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+                .accessibilityAddTraits(.isHeader)
         }
-        .padding(18)
-        .background(RuuutoPalette.soft, in: RoundedRectangle(cornerRadius: 24))
     }
 
-    private var emailLabel: Text {
-        Text("auth.email.label", tableName: "Authentication")
+    private var authenticationForm: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            modeTabs
+            LoginCredentialFields(
+                email: $email,
+                password: $password,
+                focus: $focus,
+                isCreatingAccount: mode == .signUp,
+                isSubmitting: submitting,
+                submit: submit
+            )
+            submitButton
+                .padding(.top, 8)
+            feedback
+        }
     }
 
-    private var passwordLabel: Text {
-        Text("auth.password.label", tableName: "Authentication")
+    private var modeTabs: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 18))
+
+        return layout {
+            ForEach(Mode.allCases, id: \.self) { option in
+                Button {
+                    mode = option
+                } label: {
+                    option.title
+                        .font(.subheadline.weight(mode == option ? .heavy : .semibold))
+                        .foregroundStyle(mode == option ? .white : RuuutoPalette.line)
+                        .multilineTextAlignment(.leading)
+                        .padding(.horizontal, 2)
+                        .padding(.vertical, 7)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                        .overlay(alignment: .bottom) {
+                            if mode == option {
+                                Rectangle()
+                                    .fill(RuuutoPalette.accent)
+                                    .frame(height: 2)
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(mode == option ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(alignment: .bottom) {
+            Rectangle()
+                .fill(RuuutoPalette.line.opacity(0.45))
+                .frame(height: 1)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("auth.mode.label", tableName: "Authentication"))
+        .disabled(submitting)
     }
 
-    private func fieldLabel(_ title: Text) -> some View {
-        title
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(RuuutoPalette.muted)
-            .accessibilityHidden(true)
+    private var submitButton: some View {
+        Button {
+            Task { await submit() }
+        } label: {
+            Group {
+                if submitting {
+                    ProgressView()
+                        .tint(RuuutoPalette.ink)
+                        .accessibilityLabel(Text("auth.submission.in_progress", tableName: "Authentication"))
+                } else {
+                    mode.title
+                        .font(.headline.weight(.heavy))
+                }
+            }
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, minHeight: 49)
+            .foregroundStyle(canSubmit || submitting ? RuuutoPalette.ink : RuuutoPalette.line)
+            .background(
+                canSubmit || submitting ? RuuutoPalette.accent : RuuutoPalette.soft,
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!canSubmit)
+    }
+
+    @ViewBuilder
+    private var feedback: some View {
+        switch submission {
+        case .failed(let failedMode):
+            failedMode.failureMessage
+                .font(.subheadline)
+                .foregroundStyle(RuuutoPalette.line)
+        case .confirmationRequired:
+            Text("auth.sign_up.confirm_email", tableName: "Authentication")
+                .font(.subheadline)
+                .foregroundStyle(RuuutoPalette.line)
+        case .idle, .submitting:
+            EmptyView()
+        }
     }
 
     private var submitting: Bool { submission == .submitting }
