@@ -1,6 +1,23 @@
 {
-  "sourceLanguage" : "ja",
-  "strings" : {
+  "sourceLanguage": "ja",
+  "strings": {
+    "groups.create.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t create the group. Try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グループを作成できませんでした。もう一度お試しください。"
+          }
+        }
+      }
+    }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

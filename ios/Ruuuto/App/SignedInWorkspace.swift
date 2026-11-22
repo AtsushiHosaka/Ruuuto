@@ -6,6 +6,7 @@ import Observation
 final class SignedInWorkspace {
     enum Destination: Equatable {
         case groups
+        case createGroup
         case board(groupID: UUID, boardID: UUID?)
     }
 
@@ -15,6 +16,8 @@ final class SignedInWorkspace {
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups
     private(set) var isSigningOut = false
+    private(set) var groupCreation: CreateGroupViewModel?
+    @ObservationIgnored private var groupCreationID: UUID?
 
     init(session: SessionModel, userID: UUID, defaults: UserDefaults = .standard) {
         self.session = session
@@ -46,7 +49,28 @@ final class SignedInWorkspace {
         return true
     }
 
+    func showGroupCreation() {
+        guard isCurrentSession else { return }
+        let creationID = UUID()
+        let client = session.client
+        groupCreationID = creationID
+        groupCreation = CreateGroupViewModel(
+            createGroup: { name, requestID in
+                try await CreateGroupAPI.create(client: client, name: name, requestID: requestID)
+            },
+            selectGroup: { [weak self] group in
+                guard let self, self.isCurrentSession, self.destination == .createGroup,
+                      self.groupCreationID == creationID else { return }
+                self.groups.selectGroup(group)
+                self.openBoard(groupID: group.id)
+            }
+        )
+        destination = .createGroup
+    }
+
     func showGroups() {
+        groupCreation = nil
+        groupCreationID = nil
         destination = .groups
     }
 
@@ -67,6 +91,8 @@ final class SignedInWorkspace {
 
     private func openBoard(groupID: UUID, boardID: UUID? = nil) {
         guard isCurrentSession else { return }
+        groupCreation = nil
+        groupCreationID = nil
         groups.selectGroup(id: groupID)
         defaults.set(groupID.uuidString, forKey: groupSelectionKey)
         destination = .board(groupID: groupID, boardID: boardID)
