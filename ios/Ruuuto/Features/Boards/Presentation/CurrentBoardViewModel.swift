@@ -51,12 +51,12 @@ final class CurrentBoardViewModel {
             if board.groupID == groupID {
                 result = .loaded(board)
             } else {
-                result = .failed("選んだグループのボードを表示できませんでした。")
+                result = .failed(String(localized: "boards.current.group_mismatch"))
             }
         } catch is CancellationError {
             result = .idle
         } catch {
-            result = .failed("お題を取得できませんでした。")
+            result = .failed(String(localized: "boards.current.load_failed"))
         }
 
         guard activeRequestID == requestID else { return }
