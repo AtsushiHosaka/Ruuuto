@@ -31,6 +31,7 @@ struct AuthenticationView: View {
                 }
             }
             .task { await session.observe() }
+            .task(id: session.userID) { await session.profile.refresh() }
             .onOpenURL { url in
                 guard let invitationOrigin,
                       let link = InvitationLink(url: url, allowedOrigin: invitationOrigin,

@@ -14,20 +14,20 @@ final class InvitationViewModel {
         case waitingForSignIn
         case ready
         case joining
-        case accepted(UUID)
+        case accepted(InvitationAcceptance)
         case invalid
         case expired
         case failed
     }
 
     private let coordinator: InvitationCoordinator
-    private let join: (String) async throws -> UUID
+    private let join: (String) async throws -> InvitationAcceptance
     private var signedInUserID: UUID?
     private var attemptID: UUID?
 
     private(set) var state: State = .idle
 
-    init(coordinator: InvitationCoordinator, join: @escaping (String) async throws -> UUID) {
+    init(coordinator: InvitationCoordinator, join: @escaping (String) async throws -> InvitationAcceptance) {
         self.coordinator = coordinator
         self.join = join
     }
@@ -56,18 +56,18 @@ final class InvitationViewModel {
         state = .joining
 
         do {
-            let groupID = try await coordinator.accept(link) { token in
+            let acceptance = try await coordinator.accept(link) { token in
                 try Task.checkCancellation()
-                let groupID = try await join(token)
+                let acceptance = try await join(token)
                 try Task.checkCancellation()
                 guard attemptID == attempt, signedInUserID == userID else {
                     throw CancellationError()
                 }
-                return groupID
+                return acceptance
             }
             guard attemptID == attempt else { return }
-            if let groupID {
-                state = .accepted(groupID)
+            if let acceptance {
+                state = .accepted(acceptance)
             } else {
                 resetState()
             }
@@ -90,10 +90,10 @@ final class InvitationViewModel {
         }
     }
 
-    func takeAcceptedGroupID() -> UUID? {
-        guard case .accepted(let groupID) = state else { return nil }
+    func takeAcceptance() -> InvitationAcceptance? {
+        guard case .accepted(let acceptance) = state else { return nil }
         resetState()
-        return groupID
+        return acceptance
     }
 
     func discard() {

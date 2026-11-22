@@ -19,11 +19,13 @@ final class SignedInWorkspace {
     }
 
     let invitation: InvitationViewModel?
+    private(set) var invitationAcceptance: InvitationAcceptance?
     let invitationShare: InvitationShareViewModel
     var sharedInvitation: SharedInvitation?
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
     private let session: SessionModel
+    var profile: ProfileViewModel { session.profile }
     private let userID: UUID
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups
@@ -125,6 +127,7 @@ final class SignedInWorkspace {
     func receiveInvitation(_ url: URL) {
         guard isCurrentSession, let invitation else { return }
         invitation.receive(url)
+        invitationAcceptance = nil
         guard invitation.state == .ready else { return }
         invitationShare.selectGroup(nil)
         sharedInvitation = nil
@@ -135,9 +138,19 @@ final class SignedInWorkspace {
         guard isCurrentSession, destination == .invitation, let invitation else { return }
         await invitation.accept()
         guard isCurrentSession, !Task.isCancelled, destination == .invitation,
-              let groupID = invitation.takeAcceptedGroupID() else { return }
-        openBoard(groupID: groupID)
+              let acceptance = invitation.takeAcceptance() else { return }
+        openAcceptedInvitation(acceptance)
         await groups.refresh()
+    }
+
+    func openAcceptedInvitation(_ acceptance: InvitationAcceptance) {
+        openBoard(groupID: acceptance.groupID)
+        invitationAcceptance = acceptance
+    }
+
+    func takeInvitationAcceptance() -> InvitationAcceptance? {
+        defer { invitationAcceptance = nil }
+        return invitationAcceptance
     }
 
     func showInvitationSharing() {
