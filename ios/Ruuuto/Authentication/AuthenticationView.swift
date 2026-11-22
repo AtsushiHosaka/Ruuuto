@@ -39,6 +39,7 @@ struct AuthenticationView: View {
                 }
             }
             .task { await session.observe() }
+            .task(id: session.userID) { await session.profile.refresh() }
             .alert(
                 Text("auth.sign_out.failure.title", tableName: "Authentication"),
                 isPresented: $signOutError
