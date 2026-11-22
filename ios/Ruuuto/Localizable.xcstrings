@@ -51,6 +51,23 @@
           }
         }
       }
+    },
+    "groups.create.invalid_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a group name between 1 and 40 characters."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グループ名は1〜40文字で入力してください。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

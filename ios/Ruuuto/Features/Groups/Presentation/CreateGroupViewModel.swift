@@ -67,6 +67,9 @@ final class CreateGroupViewModel {
         } catch is CancellationError {
             state = .idle
             return nil
+        } catch GroupCreationError.invalidName {
+            state = .failed(String(localized: "groups.create.invalid_name"))
+            return nil
         } catch {
             state = .failed(String(localized: "groups.create.failed"))
             return nil

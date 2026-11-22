@@ -13,6 +13,7 @@ final class SignedInWorkspace {
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
     private let session: SessionModel
+    var profile: ProfileViewModel { session.profile }
     private let userID: UUID
     private let defaults: UserDefaults
     private(set) var destination: Destination = .groups

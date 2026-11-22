@@ -5,6 +5,7 @@ enum CurrentBoardState: Equatable, Sendable {
     case idle
     case loading
     case loaded(CurrentBoard)
+    case empty
     case failed(String)
 }
 
@@ -53,6 +54,8 @@ final class CurrentBoardViewModel {
             } else {
                 result = .failed(String(localized: "boards.current.group_mismatch"))
             }
+        } catch CurrentBoardLoadError.noActiveBoard {
+            result = .empty
         } catch is CancellationError {
             result = .idle
         } catch {

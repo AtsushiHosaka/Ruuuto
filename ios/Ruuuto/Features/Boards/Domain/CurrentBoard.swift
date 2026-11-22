@@ -7,3 +7,7 @@ struct CurrentBoard: Identifiable, Equatable, Sendable {
     let opensAt: Date
     let closesAt: Date
 }
+
+enum CurrentBoardLoadError: Error {
+    case noActiveBoard
+}

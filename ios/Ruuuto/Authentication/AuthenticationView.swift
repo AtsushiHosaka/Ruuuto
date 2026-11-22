@@ -23,6 +23,7 @@ struct AuthenticationView: View {
                 }
             }
             .task { await session.observe() }
+            .task(id: session.userID) { await session.profile.refresh() }
         } else {
             ContentUnavailableView {
                 Label {
