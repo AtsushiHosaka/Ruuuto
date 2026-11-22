@@ -1,15 +1,25 @@
 import SwiftUI
 
 struct SignedInView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var workspace: SignedInWorkspace
     @State private var signOutError = false
 
     @Binding var pendingInvitation: InvitationLink?
 
-    init(session: SessionModel, userID: UUID, invitationOrigin: URL?, pendingInvitation: Binding<InvitationLink?>) {
+    init(
+        session: SessionModel,
+        userID: UUID,
+        invitationOrigin: URL?,
+        pendingInvitation: Binding<InvitationLink?>,
+        notificationDelegate: NotificationAppDelegate
+    ) {
         _pendingInvitation = pendingInvitation
         _workspace = State(initialValue: SignedInWorkspace(
-            session: session, userID: userID, invitationOrigin: invitationOrigin
+            session: session,
+            userID: userID,
+            invitationOrigin: invitationOrigin,
+            notificationDelegate: notificationDelegate
         ))
     }
 
@@ -43,8 +53,12 @@ struct SignedInView: View {
                 SystemShareSheet(url: invitation.url)
             }
             .task { await workspace.start() }
+            .task(id: scenePhase == .active ? workspace.notifications.pendingTap?.id : nil) {
+                guard scenePhase == .active else { return }
+                await workspace.openPendingNotification()
+            }
             .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
-                await workspace.currentBoard.selectGroup(groupID)
+                await workspace.loadSelectedBoard(groupID)
             }
             .alert(Text("auth.sign_out.failure.title", tableName: "Authentication"), isPresented: $signOutError) {
                 Button(role: .cancel) {} label: {
