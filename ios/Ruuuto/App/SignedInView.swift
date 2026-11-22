@@ -11,10 +11,10 @@ struct SignedInView: View {
     var body: some View {
         ContentView()
             .environment(workspace)
-            .navigationTitle("Ruuuto")
+            .navigationTitle(Text(verbatim: "Ruuuto"))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("ログアウト") {
+                    Button {
                         Task {
                             do {
                                 try await workspace.signOut()
@@ -22,15 +22,19 @@ struct SignedInView: View {
                                 signOutError = true
                             }
                         }
+                    } label: {
+                        Text("auth.action.sign_out", tableName: "Authentication")
                     }
                     .disabled(workspace.isSigningOut)
                 }
             }
             .task { await workspace.start() }
-            .alert("ログアウトできませんでした", isPresented: $signOutError) {
-                Button("閉じる", role: .cancel) {}
+            .alert(Text("auth.sign_out.failure.title", tableName: "Authentication"), isPresented: $signOutError) {
+                Button(role: .cancel) {} label: {
+                    Text("auth.action.close", tableName: "Authentication")
+                }
             } message: {
-                Text("通信を確認して、もう一度お試しください。")
+                Text("auth.sign_out.failure.retry", tableName: "Authentication")
             }
     }
 }
