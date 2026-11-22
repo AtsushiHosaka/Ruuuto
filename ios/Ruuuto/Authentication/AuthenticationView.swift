@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @State private var session: SessionModel?
-    @State private var signOutError = false
 
     init(configuration: AppConfiguration? = AppConfiguration()) {
         _session = State(initialValue: configuration.map(SessionModel.init))
@@ -18,38 +17,13 @@ struct AuthenticationView: View {
                     }
                 case .signedOut:
                     LoginView(signIn: session.signIn, signUp: session.signUp)
-                case .signedIn:
-                    ContentView()
-                        .navigationTitle(Text(verbatim: "Ruuuto"))
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button {
-                                    Task {
-                                        do {
-                                            try await session.signOut()
-                                        } catch {
-                                            signOutError = true
-                                        }
-                                    }
-                                } label: {
-                                    Text("auth.action.sign_out", tableName: "Authentication")
-                                }
-                            }
-                        }
+                case .signedIn(let userID):
+                    SignedInView(session: session, userID: userID)
+                        .id(userID)
                 }
             }
             .task { await session.observe() }
             .task(id: session.userID) { await session.profile.refresh() }
-            .alert(
-                Text("auth.sign_out.failure.title", tableName: "Authentication"),
-                isPresented: $signOutError
-            ) {
-                Button(role: .cancel) {} label: {
-                    Text("auth.action.close", tableName: "Authentication")
-                }
-            } message: {
-                Text("auth.sign_out.failure.retry", tableName: "Authentication")
-            }
         } else {
             ContentUnavailableView {
                 Label {
