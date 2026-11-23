@@ -64,7 +64,7 @@ select is(
 select is((select count(*)::int from public.decorations), 1, 'A: 所属グループの装飾だけが見える');
 select is((select count(*)::int from public.profiles), 2, 'A: 自分と同じグループのDのプロフィールだけが見える');
 select is((select count(*)::int from public.devices), 1, 'A: 自分の端末登録だけが見える');
-select is((select count(*)::int from public.invitations), 0, 'A: 招待テーブルは直接読めない');
+select throws_ok($$ select count(*) from public.invitations $$, '42501', null, 'A: 招待テーブルは直接読めない（SELECT権限がない）');
 select is((select count(*)::int from public.topic_prompts), 1, 'A: 固定のお題は読める');
 
 -- A でも、テーブルを直接書き換えることはできない

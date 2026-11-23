@@ -93,7 +93,7 @@ select throws_ok($$ select public.ruuuto_save_topic('41100000-0000-0000-0000-000
   'RC002', null, '締切時刻を過ぎたボードは、status が open でも RC002');
 
 -- アプリから通知イベントは見えない
-select is((select count(*)::int from public.notification_events), 0, '通知イベントはアプリから読めない');
+select throws_ok($$ select count(*) from public.notification_events $$, '42501', null, '通知イベントはアプリから読めない（RCNO-5でSELECT権限を外した）');
 
 reset role;
 set local role anon;
