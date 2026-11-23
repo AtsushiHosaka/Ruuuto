@@ -13,6 +13,8 @@ insert into public.groups (id, name, created_by, create_request_id) values
   ('10100000-0000-0000-0000-000000000002', '別の班', '00000000-0000-0000-0000-0000000010b1', gen_random_uuid()),
   ('10100000-0000-0000-0000-000000000003', 'ボードなしの班', '00000000-0000-0000-0000-0000000010b1', gen_random_uuid());
 
+-- RCNO-4 の48件を外し、このテストのお題だけにする
+delete from public.topic_prompts;
 insert into public.topic_prompts (month, week, body) values
   (11, 3, '窓の外'),
   (11, 4, 'あったかいもの'),
