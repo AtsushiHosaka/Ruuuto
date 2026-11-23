@@ -8,9 +8,9 @@ values
   ('00000000-0000-0000-0000-0000000040a1', 'hanako@example.com', '{}'::jsonb),
   ('00000000-0000-0000-0000-0000000040b1', 'taro@example.com', '{"display_name": "  たろう  "}'::jsonb);
 
-select is(
+select matches(
   (select display_name from public.profiles where id = '00000000-0000-0000-0000-0000000040a1'),
-  'hanako', '表示名の既定はメールの@より前');
+  '^メンバー[0-9]{4}$', '表示名の既定は「メンバー」と4桁の数字（RCNO-40 でメールから作らないように変更）');
 select is(
   (select display_name from public.profiles where id = '00000000-0000-0000-0000-0000000040b1'),
   'たろう', 'メタデータの display_name があれば前後の空白を除いて使う');
@@ -22,7 +22,8 @@ select set_config('request.jwt.claims',
 
 select is(
   public.ruuuto_my_profile()::jsonb,
-  '{"id": "00000000-0000-0000-0000-0000000040a1", "display_name": "hanako"}'::jsonb,
+  json_build_object('id', '00000000-0000-0000-0000-0000000040a1',
+    'display_name', (select display_name from public.profiles where id = '00000000-0000-0000-0000-0000000040a1'))::jsonb,
   '本人のIDと表示名を返す');
 
 select is(
