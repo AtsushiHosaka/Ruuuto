@@ -9,6 +9,9 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000019a1', 'grab-a@example.com'),
   ('00000000-0000-0000-0000-0000000019b1', 'grab-b@example.com'),
   ('00000000-0000-0000-0000-0000000019c1', 'grab-c@example.com');
+-- つかんだら前に出す設定（RCNO-19 レイヤー、既定はオフ）をオンにして、従来の重なり順の動きを確かめる
+update public.profiles set auto_bring_to_front = true
+ where id in ('00000000-0000-0000-0000-0000000019a1', '00000000-0000-0000-0000-0000000019b1');
 insert into public.groups (id, name, created_by, create_request_id) values
   ('19000000-0000-0000-0000-000000000001', 'えーえす班', '00000000-0000-0000-0000-0000000019a1', gen_random_uuid()),
   ('19000000-0000-0000-0000-000000000002', 'べつの班', '00000000-0000-0000-0000-0000000019c1', gen_random_uuid());

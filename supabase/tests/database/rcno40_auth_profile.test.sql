@@ -23,8 +23,9 @@ select set_config('request.jwt.claims',
 select is(
   public.ruuuto_my_profile()::jsonb,
   json_build_object('id', '00000000-0000-0000-0000-0000000040a1',
-    'display_name', (select display_name from public.profiles where id = '00000000-0000-0000-0000-0000000040a1'))::jsonb,
-  '本人のIDと表示名を返す');
+    'display_name', (select display_name from public.profiles where id = '00000000-0000-0000-0000-0000000040a1'),
+    'auto_bring_to_front', false)::jsonb,
+  '本人のIDと表示名（と RCNO-19 のつかんだら前に出す設定。既定はオフ）を返す');
 
 select is(
   public.ruuuto_update_profile('  はなこ ')::jsonb ->> 'display_name',
