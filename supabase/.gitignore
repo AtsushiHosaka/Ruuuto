@@ -6,3 +6,6 @@
 .env.keys
 .env.local
 .env.*.local
+
+# Edge Function のローカル用の秘密の値
+functions/.env
