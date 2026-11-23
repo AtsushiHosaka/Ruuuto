@@ -62,14 +62,20 @@ grant execute on function private.ruuuto_is_member(uuid) to authenticated;
 grant execute on function private.ruuuto_is_board_member(uuid) to authenticated;
 grant execute on function private.ruuuto_shares_group(uuid) to authenticated;
 
--- テーブルへの直接の書き込みは、ログイン済みでも許可しない
-revoke insert, update, delete, truncate, references, trigger
-  on all tables in schema public from authenticated;
--- これから作るテーブルにも同じ既定を使う
-alter default privileges in schema public
-  revoke insert, update, delete, truncate, references, trigger on tables from authenticated;
-alter default privileges in schema public
-  revoke all on tables from anon;
+-- テーブルへの直接の書き込みは、ログイン済みでも許可しない。
+-- 対象はRCNO-34で作ったテーブルに限り、public にある他のテーブルや既定の権限は変えない。
+-- 後のマイグレーションで追加するテーブルは、それぞれのマイグレーションで権限を明示する。
+revoke insert, update, delete, truncate, references, trigger on
+  public.profiles,
+  public.groups,
+  public.group_members,
+  public.invitations,
+  public.topic_prompts,
+  public.boards,
+  public.photos,
+  public.decorations,
+  public.devices
+from authenticated;
 
 -- プロフィール: 自分と、同じグループの参加者
 create policy "profiles: 自分と同じグループの参加者を読める"
