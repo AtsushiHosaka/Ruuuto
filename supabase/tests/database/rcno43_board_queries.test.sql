@@ -52,8 +52,8 @@ select pg_temp.act_as('00000000-0000-0000-0000-0000000043b1');
 select is(
   public.ruuuto_current_board('43000000-0000-0000-0000-000000000001')::jsonb,
   '{"id": "43100000-0000-0000-0000-000000000003", "group_id": "43000000-0000-0000-0000-000000000001",
-    "topic": "窓の外", "opens_at": "2026-11-15T15:00:00Z", "closes_at": "2026-11-22T15:00:00Z", "status": "open"}'::jsonb,
-  '開催中のボードをiOSが読む形（UTCの秒単位）で返す');
+    "topic": "窓の外", "topic_texts": {}, "opens_at": "2026-11-15T15:00:00Z", "closes_at": "2026-11-22T15:00:00Z", "status": "open"}'::jsonb,
+  '開催中のボードをiOSが読む形（UTCの秒単位）で返す。手動のお題の topic_texts は空（RCNO-4）');
 select throws_ok(
   $$ select public.ruuuto_current_board('43000000-0000-0000-0000-000000000002') $$,
   '42501', null, '所属していないグループの開催中ボードは 42501');

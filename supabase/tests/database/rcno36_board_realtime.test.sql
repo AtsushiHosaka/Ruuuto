@@ -167,7 +167,7 @@ update public.boards set topic = topic where id = '36100000-0000-0000-0000-00000
 select is((select count(*) from pg_temp.sent('board_updated')), 1::bigint, 'お題の変更を1件配信し、中身の変わらない更新は配信しない');
 select is(
   (select array(select jsonb_object_keys(payload) order by 1) from pg_temp.sent('board_updated') limit 1),
-  array['closes_at', 'group_id', 'id', 'opens_at', 'status', 'topic'], 'board_updated は ruuuto_current_board と同じ項目');
+  array['closes_at', 'group_id', 'id', 'opens_at', 'status', 'topic', 'topic_texts'], 'board_updated は ruuuto_current_board と同じ項目（RCNO-4 で topic_texts を追加）');
 
 -- 別グループのボードには何も配信していない
 select is((select count(*) from realtime.messages
