@@ -192,6 +192,17 @@ alter table public.photos enable row level security;
 alter table public.decorations enable row level security;
 alter table public.devices enable row level security;
 
--- 未ログインの利用者には何も公開しない
-revoke all on all tables in schema public from anon;
+-- 未ログインの利用者には何も公開しない。対象はここで作った9テーブルに限り、
+-- public にある他のテーブルの権限は変えない。
+revoke all on
+  public.profiles,
+  public.groups,
+  public.group_members,
+  public.invitations,
+  public.topic_prompts,
+  public.boards,
+  public.photos,
+  public.decorations,
+  public.devices
+from anon;
 revoke execute on function public.ruuuto_touch_updated_at() from public, anon, authenticated;
