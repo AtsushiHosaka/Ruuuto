@@ -42,17 +42,26 @@ final class PhotoPostViewModel {
     private let prepare: @Sendable (Data) throws -> PreparedPhoto
     private let poster: PhotoPoster
     private let onPosted: @MainActor (PostedPhoto) -> Void
+    private let pendingStore: PendingPhotoStore?
 
     init(
         boardID: UUID,
         poster: PhotoPoster,
+        pendingStore: PendingPhotoStore? = nil,
         prepare: @escaping @Sendable (Data) throws -> PreparedPhoto = PhotoImagePreparer.prepare,
         onPosted: @escaping @MainActor (PostedPhoto) -> Void = { _ in }
     ) {
         self.boardID = boardID
         self.poster = poster
+        self.pendingStore = pendingStore
         self.prepare = prepare
         self.onPosted = onPosted
+
+        // 前回送れなかった写真があれば、同じ投稿IDで送り直せる状態に戻す（RCNO-15）
+        if let (entry, photo) = pendingStore?.latest(boardID: boardID) {
+            photoID = entry.photoID
+            state = .failed(photo, .post(.retryable))
+        }
     }
 
     var preparedPhoto: PreparedPhoto? {
@@ -81,6 +90,7 @@ final class PhotoPostViewModel {
         guard !isPosting else { return }
         let selection = UUID()
         selectionID = selection
+        discardPending()
         photoID = UUID()
         state = .preparing
 
@@ -109,8 +119,13 @@ final class PhotoPostViewModel {
     func cancelSelection() {
         guard !isPosting else { return }
         selectionID = UUID()
+        discardPending()
         photoID = UUID()
         state = .choosing
+    }
+
+    private func discardPending() {
+        pendingStore?.remove(photoID: photoID)
     }
 
     @discardableResult
@@ -121,6 +136,8 @@ final class PhotoPostViewModel {
 
         do {
             state = .posting(photo, .starting)
+            // 送信中にアプリが終了・再起動しても、同じIDで送り直せるよう先に残す。確定したら消す。
+            try? pendingStore?.save(photoID: photoID, boardID: boardID, photo: photo)
             var posted = try await poster.begin(photoID, boardID, city, photo.width, photo.height)
             // 前回の送り直しで確定まで済んでいれば、アップロードと確定は省く
             if posted.status == .pending {
@@ -135,6 +152,7 @@ final class PhotoPostViewModel {
             guard posted.status == .posted, posted.id == photoID, posted.boardID == boardID else {
                 throw PhotoPostError.rejected
             }
+            discardPending()
             state = .posted(posted)
             onPosted(posted)
             return posted
@@ -142,8 +160,13 @@ final class PhotoPostViewModel {
             if selectionID == selection { state = .previewing(photo) }
             return nil
         } catch {
+            let failure = error as? PhotoPostError ?? .retryable
+            // 送り直せる失敗は残したまま（画面を閉じても言語を変えても戻せる）。通らない失敗は消す。
+            if !failure.canRetry {
+                pendingStore?.remove(photoID: photoID)
+            }
             if selectionID == selection {
-                state = .failed(photo, .post(error as? PhotoPostError ?? .retryable))
+                state = .failed(photo, .post(failure))
             }
             return nil
         }

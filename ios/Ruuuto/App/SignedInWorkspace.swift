@@ -74,7 +74,11 @@ final class SignedInWorkspace {
 
     /// 開催中のボードへ写真を投稿する画面の状態（RCNO-13）
     func makePhotoPost(boardID: UUID) -> PhotoPostViewModel {
-        PhotoPostViewModel(boardID: boardID, poster: PhotoPostAPI.poster(client: session.client))
+        PhotoPostViewModel(
+            boardID: boardID,
+            poster: PhotoPostAPI.poster(client: session.client),
+            pendingStore: PendingPhotoStore.forUser(userID)
+        )
     }
 
     func showGroups() {
