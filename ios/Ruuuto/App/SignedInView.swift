@@ -5,6 +5,7 @@ struct SignedInView: View {
     @State private var signOutError = false
     @State private var photoPost: PhotoPostViewModel?
     @State private var history: HistoryCalendarViewModel?
+    @State private var map: CityMapViewModel?
 
     init(session: SessionModel, userID: UUID) {
         _workspace = State(initialValue: SignedInWorkspace(session: session, userID: userID))
@@ -58,6 +59,19 @@ struct SignedInView: View {
                         }
                     }
                 }
+                ToolbarItem(placement: .bottomBar) {
+                    if case .loaded(let board) = workspace.currentBoard.state {
+                        Button {
+                            map = workspace.makeMap(boardID: board.id)
+                        } label: {
+                            Label {
+                                Text("map.title", tableName: "Map")
+                            } icon: {
+                                Image(systemName: "map")
+                            }
+                        }
+                    }
+                }
             }
             .sheet(item: $photoPost) { PhotoPostView(model: $0) }
             .sheet(item: $history) { model in
@@ -65,9 +79,15 @@ struct SignedInView: View {
                     model: model,
                     images: workspace.photoImages,
                     makeBoard: workspace.makePastBoard(boardID:),
-                    makeWithdrawal: workspace.makePhotoWithdrawal(onWithdrawn:)
+                    makeWithdrawal: workspace.makePhotoWithdrawal(onWithdrawn:),
+                    makeMap: workspace.makeMap(boardID:)
                 )
             }
+            .sheet(item: $map) { model in
+                CityMapView(model: model, images: workspace.photoImages, makeWithdrawal: workspace.makePhotoWithdrawal(onWithdrawn:))
+            }
+            // グループを切り替えたら、開いているマップを閉じる（前のグループのピンを残さない）
+            .onChange(of: workspace.groups.selectedID) { _, _ in map = nil }
             .task { await workspace.start() }
             .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
                 await workspace.currentBoard.selectGroup(groupID)

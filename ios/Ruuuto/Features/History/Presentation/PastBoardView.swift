@@ -9,7 +9,9 @@ struct PastBoardView: View {
     let images: PhotoImageCache
     let makeWithdrawal: @MainActor (@escaping @MainActor (UUID) -> Void) -> PhotoWithdrawalViewModel
     @State private var withdrawal: PhotoWithdrawalViewModel?
+    let makeMap: @MainActor (UUID) -> CityMapViewModel
     @State private var enlarged: BoardPhoto?
+    @State private var map: CityMapViewModel?
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -49,6 +51,19 @@ struct PastBoardView: View {
                 }
             }
             if model.state == .loading { await model.load() }
+        }
+        .toolbar {
+            // このボードの都市別マップ（RCNO-31）
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    map = makeMap(model.boardID)
+                } label: {
+                    Label { Text("map.title", tableName: "Map") } icon: { Image(systemName: "map") }
+                }
+            }
+        }
+        .sheet(item: $map) { map in
+            CityMapView(model: map, images: images, makeWithdrawal: makeWithdrawal)
         }
         .modifier(OptionalWithdrawalDialogs(model: withdrawal))
         .fullScreenCover(item: $enlarged) { photo in

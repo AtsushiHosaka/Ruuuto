@@ -9,6 +9,7 @@ struct HistoryCalendarView: View {
     let images: PhotoImageCache
     let makeBoard: @MainActor (UUID) -> PastBoardViewModel
     let makeWithdrawal: @MainActor (@escaping @MainActor (UUID) -> Void) -> PhotoWithdrawalViewModel
+    let makeMap: @MainActor (UUID) -> CityMapViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -34,7 +35,7 @@ struct HistoryCalendarView: View {
                 }
             }
             .navigationDestination(for: BoardMonth.self) { month in
-                MonthBoardsView(month: month, model: model, images: images, makeBoard: makeBoard, makeWithdrawal: makeWithdrawal)
+                MonthBoardsView(month: month, model: model, images: images, makeBoard: makeBoard, makeWithdrawal: makeWithdrawal, makeMap: makeMap)
             }
             .task { await model.reload() }
         }
@@ -120,6 +121,7 @@ struct MonthBoardsView: View {
     let images: PhotoImageCache
     let makeBoard: @MainActor (UUID) -> PastBoardViewModel
     let makeWithdrawal: @MainActor (@escaping @MainActor (UUID) -> Void) -> PhotoWithdrawalViewModel
+    let makeMap: @MainActor (UUID) -> CityMapViewModel
     @Environment(\.locale) private var locale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -135,7 +137,7 @@ struct MonthBoardsView: View {
             case .loaded(let boards):
                 List(boards) { board in
                     NavigationLink {
-                        PastBoardView(model: makeBoard(board.id), images: images, makeWithdrawal: makeWithdrawal)
+                        PastBoardView(model: makeBoard(board.id), images: images, makeWithdrawal: makeWithdrawal, makeMap: makeMap)
                     } label: {
                         row(board)
                     }

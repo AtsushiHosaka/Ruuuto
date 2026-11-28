@@ -109,6 +109,17 @@ final class SignedInWorkspace {
         }
     }
 
+    /// ボードの都市別マップ（RCNO-31）
+    func makeMap(boardID: UUID) -> CityMapViewModel {
+        let client = session.client
+        return CityMapViewModel(
+            boardID: boardID,
+            catalog: .bundled,
+            loadCities: { try await CityMapAPI.cities(client: client, boardID: $0) },
+            loadPhotos: { try await CityMapAPI.photos(client: client, boardID: $0, cityID: $1) }
+        )
+    }
+
     func showGroups() {
         groupCreation = nil
         groupCreationID = nil
