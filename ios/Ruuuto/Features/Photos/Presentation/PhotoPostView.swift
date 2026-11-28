@@ -11,6 +11,8 @@ extension PhotoPostViewModel: Identifiable {}
 struct PhotoPostView: View {
     @State var model: PhotoPostViewModel
     @State private var pickerItem: PhotosPickerItem?
+    @State private var cameraAccess: CameraAccess = .notDetermined
+    @State private var showsCamera = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -112,15 +114,90 @@ struct PhotoPostView: View {
     }
 
     private var picker: some View {
-        PhotosPicker(selection: $pickerItem, matching: .images, preferredItemEncoding: .current) {
-            if model.preparedPhoto == nil {
-                Text("photos.post.choose", tableName: "Photos")
-            } else {
-                Text("photos.post.choose_other", tableName: "Photos")
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Button {
+                    Task { await openCamera() }
+                } label: {
+                    Label {
+                        Text("photos.post.camera", tableName: "Photos")
+                    } icon: {
+                        Image(systemName: "camera")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(RuuutoPalette.accent)
+                .disabled(cameraAccess == .unavailable)
+
+                PhotosPicker(selection: $pickerItem, matching: .images, preferredItemEncoding: .current) {
+                    Label {
+                        if model.preparedPhoto == nil {
+                            Text("photos.post.choose", tableName: "Photos")
+                        } else {
+                            Text("photos.post.choose_other", tableName: "Photos")
+                        }
+                    } icon: {
+                        Image(systemName: "photo.on.rectangle")
+                    }
+                }
+                .buttonStyle(.bordered)
             }
+            .disabled(model.isPosting || model.state == .preparing)
+
+            cameraNotice
         }
-        .buttonStyle(.bordered)
-        .disabled(model.isPosting || model.state == .preparing)
+        .onAppear { cameraAccess = CameraAccess.current() }
+        // 設定アプリで許可を変えて戻ってきたときに読み直す
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            cameraAccess = CameraAccess.current()
+        }
+        .fullScreenCover(isPresented: $showsCamera) {
+            CameraPicker(
+                onCapture: { image in
+                    showsCamera = false
+                    guard let data = image.jpegData(compressionQuality: 0.95) else {
+                        model.selectionFailed()
+                        return
+                    }
+                    Task { await model.select(data) }
+                },
+                onCancel: { showsCamera = false }
+            )
+            .ignoresSafeArea()
+        }
+    }
+
+    /// カメラを使えないときの案内（RCNO-16）。拒否されていても、ライブラリからは選べる。
+    @ViewBuilder private var cameraNotice: some View {
+        switch cameraAccess {
+        case .denied:
+            VStack(spacing: 8) {
+                Text("photos.camera.denied", tableName: "Photos")
+                    .font(RuuutoType.body(.footnote, dynamicTypeSize: dynamicTypeSize))
+                    .foregroundStyle(RuuutoPalette.sub)
+                    .multilineTextAlignment(.center)
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("photos.camera.open_settings", tableName: "Photos")
+                }
+                .font(RuuutoType.body(.footnote, dynamicTypeSize: dynamicTypeSize))
+            }
+        case .unavailable:
+            Text("photos.camera.unavailable", tableName: "Photos")
+                .font(RuuutoType.body(.footnote, dynamicTypeSize: dynamicTypeSize))
+                .foregroundStyle(RuuutoPalette.sub)
+                .multilineTextAlignment(.center)
+        case .authorized, .notDetermined:
+            EmptyView()
+        }
+    }
+
+    private func openCamera() async {
+        cameraAccess = await CameraAccess.requestIfNeeded()
+        showsCamera = cameraAccess == .authorized
     }
 
     private var submitButton: some View {

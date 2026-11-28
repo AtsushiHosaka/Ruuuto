@@ -1,6 +1,74 @@
 {
   "sourceLanguage": "ja",
   "strings": {
+    "photos.camera.denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access is turned off. Allow it in Settings, or choose a photo from your library."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カメラの使用が許可されていません。設定アプリで許可するか、ライブラリから写真を選んでください。"
+          }
+        }
+      }
+    },
+    "photos.camera.open_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定を開く"
+          }
+        }
+      }
+    },
+    "photos.camera.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera isn’t available on this device. Choose a photo from your library."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この端末ではカメラを使えません。ライブラリから写真を選んでください。"
+          }
+        }
+      }
+    },
+    "photos.post.camera": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take Photo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "撮影する"
+          }
+        }
+      }
+    },
     "photos.post.cancel": {
       "extractionState": "manual",
       "localizations": {
@@ -58,13 +126,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose one photo for this week’s prompt."
+            "value": "Take or choose one photo for this week’s prompt."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "お題に合う写真を1枚選んでください。"
+            "value": "お題に合う写真を撮影するか、ライブラリから1枚選んでください。"
           }
         }
       }
