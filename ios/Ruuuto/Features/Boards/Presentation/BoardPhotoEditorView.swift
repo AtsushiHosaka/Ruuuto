@@ -855,7 +855,7 @@ private struct DecorationEditor: View {
                     Section("boards.decorations.edit.stamp") {
                         Picker("boards.decorations.edit.stamp", selection: $stamp) {
                             ForEach(BoardStampKind.allCases) { option in
-                                Text(LocalizedStringKey("boards.decorations.stamp.option.\(option.rawValue)"))
+                                Text(option.localizedNameKey)
                                     .tag(option)
                             }
                         }
@@ -985,7 +985,7 @@ private struct StampPicker: View {
                             VStack(spacing: 8) {
                                 Text(verbatim: stamp.symbol)
                                     .font(.system(size: 42))
-                                Text(LocalizedStringKey("boards.decorations.stamp.option.\(stamp.rawValue)"))
+                                Text(stamp.localizedNameKey)
                                     .font(RuuutoType.rounded(.caption))
                                     .foregroundStyle(RuuutoPalette.ink)
                             }
@@ -995,7 +995,7 @@ private struct StampPicker: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(
-                            Text(LocalizedStringKey("boards.decorations.stamp.option.\(stamp.rawValue)"))
+                            Text(stamp.localizedNameKey)
                         )
                     }
                 }
@@ -1150,8 +1150,21 @@ private struct BoardStampView: View {
             .shadow(color: .black.opacity(0.24), radius: 5, y: 3)
             .fixedSize()
             .accessibilityLabel(
-                Text(LocalizedStringKey("boards.decorations.stamp.option.\(stamp.rawValue)"))
+                Text(stamp.localizedNameKey)
             )
+    }
+}
+
+private extension BoardStampKind {
+    var localizedNameKey: LocalizedStringKey {
+        switch self {
+        case .heart: "boards.decorations.stamp.option.heart"
+        case .star: "boards.decorations.stamp.option.star"
+        case .sparkles: "boards.decorations.stamp.option.sparkles"
+        case .flower: "boards.decorations.stamp.option.flower"
+        case .smile: "boards.decorations.stamp.option.smile"
+        case .sun: "boards.decorations.stamp.option.sun"
+        }
     }
 }
 
