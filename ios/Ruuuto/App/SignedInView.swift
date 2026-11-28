@@ -4,6 +4,7 @@ struct SignedInView: View {
     @State private var workspace: SignedInWorkspace
     @State private var signOutError = false
     @State private var photoPost: PhotoPostViewModel?
+    @State private var history: HistoryCalendarViewModel?
 
     init(session: SessionModel, userID: UUID) {
         _workspace = State(initialValue: SignedInWorkspace(session: session, userID: userID))
@@ -32,6 +33,19 @@ struct SignedInView: View {
             // ホーム画面ができるまでの仮の入口（RCNO-13）。開催中のボードがあるときだけ表示する。
             .toolbar {
                 ToolbarItem(placement: .bottomBar) {
+                    if let groupID = workspace.groups.selectedID {
+                        Button {
+                            history = workspace.makeHistory(groupID: groupID)
+                        } label: {
+                            Label {
+                                Text("history.entry", tableName: "History")
+                            } icon: {
+                                Image(systemName: "calendar")
+                            }
+                        }
+                    }
+                }
+                ToolbarItem(placement: .bottomBar) {
                     if case .loaded(let board) = workspace.currentBoard.state {
                         Button {
                             photoPost = workspace.makePhotoPost(boardID: board.id)
@@ -46,6 +60,14 @@ struct SignedInView: View {
                 }
             }
             .sheet(item: $photoPost) { PhotoPostView(model: $0) }
+            .sheet(item: $history) { model in
+                HistoryCalendarView(
+                    model: model,
+                    images: workspace.photoImages,
+                    makeBoard: workspace.makePastBoard(boardID:),
+                    makeWithdrawal: workspace.makePhotoWithdrawal(onWithdrawn:)
+                )
+            }
             .task { await workspace.start() }
             .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
                 await workspace.currentBoard.selectGroup(groupID)
