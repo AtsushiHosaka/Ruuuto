@@ -18,9 +18,18 @@ struct CurrentBoardScreen: View {
                 board: board,
                 groupName: workspace.groups.groups.first(where: { $0.id == groupID })?.name ?? "Ruuuto",
                 editor: workspace.boardPhotos,
+                presence: workspace.boardPresence,
+                displayName: displayName,
                 showGroups: workspace.showGroups
             )
         }
+    }
+
+    private var displayName: String {
+        if case .loaded(let profile) = workspace.profile.state {
+            return profile.displayName
+        }
+        return String(localized: "boards.presence.member")
     }
 
     private func boardMessage(_ key: LocalizedStringKey) -> some View {
@@ -56,6 +65,8 @@ private struct BoardPhotoEditorView: View {
     let board: CurrentBoard
     let groupName: String
     @Bindable var editor: BoardPhotoEditorViewModel
+    @Bindable var presence: BoardPresenceViewModel
+    let displayName: String
     let showGroups: () -> Void
 
     var body: some View {
@@ -93,6 +104,12 @@ private struct BoardPhotoEditorView: View {
                         .foregroundStyle(RuuutoPalette.muted)
                 }
 
+                BoardEditingMembersBar(
+                    members: presence.members,
+                    currentUserID: presence.currentUserID,
+                    isReconnecting: presence.state == .reconnecting
+                )
+
                 editorContent
             }
             .padding(.horizontal, 16)
@@ -101,6 +118,9 @@ private struct BoardPhotoEditorView: View {
         .background(RuuutoPalette.page.ignoresSafeArea())
         .task(id: board.id) {
             await editor.synchronize(boardID: board.id)
+        }
+        .task(id: PresenceTaskID(boardID: board.id, displayName: displayName)) {
+            await presence.synchronize(boardID: board.id, displayName: displayName)
         }
         .alert(
             Text("boards.photos.move_error_title"),
@@ -142,7 +162,7 @@ private struct BoardPhotoEditorView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: 360)
         case .loaded:
-            BoardPhotoCanvas(editor: editor)
+            BoardPhotoCanvas(editor: editor, presence: presence)
                 .frame(height: 500)
         }
     }
@@ -150,6 +170,7 @@ private struct BoardPhotoEditorView: View {
 
 private struct BoardPhotoCanvas: View {
     @Bindable var editor: BoardPhotoEditorViewModel
+    @Bindable var presence: BoardPresenceViewModel
     @State private var dragTranslations: [UUID: CGSize] = [:]
     @State private var pendingOrigins: [UUID: CGPoint] = [:]
 
@@ -201,6 +222,7 @@ private struct BoardPhotoCanvas: View {
             .onChanged { value in
                 if dragTranslations[photo.id] == nil {
                     guard editor.beginMoving(photo.id) else { return }
+                    presence.setEditingPhotoID(photo.id)
                 }
                 dragTranslations[photo.id] = value.translation
             }
@@ -216,6 +238,7 @@ private struct BoardPhotoCanvas: View {
                 Task {
                     await editor.commitMove(photoID: photo.id, x: Double(origin.x), y: Double(origin.y))
                     pendingOrigins[photo.id] = nil
+                    presence.setEditingPhotoID(nil)
                 }
             }
     }
@@ -238,6 +261,74 @@ private struct BoardPhotoCanvas: View {
             x: min(max(CGFloat(photo.x) + translation.width, 0), maximumX),
             y: min(max(CGFloat(photo.y) + translation.height, 0), maximumY)
         )
+    }
+}
+
+private struct PresenceTaskID: Hashable {
+    let boardID: UUID
+    let displayName: String
+}
+
+private struct BoardEditingMembersBar: View {
+    let members: [BoardEditingMember]
+    let currentUserID: UUID?
+    let isReconnecting: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text("boards.presence.title")
+                    .font(RuuutoType.rounded(.subheadline))
+                    .foregroundStyle(RuuutoPalette.ink)
+                if isReconnecting {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .accessibilityLabel("boards.presence.reconnecting")
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(members) { member in
+                        HStack(spacing: 7) {
+                            Text(verbatim: initial(for: member.displayName))
+                                .font(RuuutoType.rounded(.caption).bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 28, height: 28)
+                                .background(RuuutoPalette.accent)
+                                .clipShape(Circle())
+
+                            Text(verbatim: member.displayName)
+                                .font(.caption)
+                                .lineLimit(1)
+
+                            if member.id == currentUserID {
+                                Text("boards.presence.you")
+                                    .font(.caption2)
+                                    .foregroundStyle(RuuutoPalette.muted)
+                            }
+
+                            if member.editingPhotoID != nil {
+                                Image(systemName: "hand.draw.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(RuuutoPalette.accent)
+                                    .accessibilityLabel("boards.presence.moving_photo")
+                            }
+                        }
+                        .foregroundStyle(RuuutoPalette.ink)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
+                        .background(.white.opacity(0.9))
+                        .clipShape(Capsule())
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func initial(for displayName: String) -> String {
+        String(displayName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(1)).uppercased()
     }
 }
 

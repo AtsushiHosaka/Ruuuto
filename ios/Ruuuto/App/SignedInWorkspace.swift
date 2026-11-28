@@ -13,6 +13,7 @@ final class SignedInWorkspace {
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
     let boardPhotos: BoardPhotoEditorViewModel
+    let boardPresence: BoardPresenceViewModel
     private let session: SessionModel
     var profile: ProfileViewModel { session.profile }
     private let userID: UUID
@@ -46,6 +47,17 @@ final class SignedInWorkspace {
             },
             releasePhoto: { await BoardPhotoEditingAPI.release(client: client, photoID: $0) },
             observeBoard: { BoardPhotoSyncAPI.events(client: client, boardID: $0) }
+        )
+        boardPresence = BoardPresenceViewModel(
+            currentUserID: userID,
+            connect: { boardID, displayName in
+                await BoardPresenceAPI.connect(
+                    client: client,
+                    boardID: boardID,
+                    userID: userID,
+                    displayName: displayName
+                )
+            }
         )
     }
 

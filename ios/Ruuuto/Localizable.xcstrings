@@ -217,6 +217,41 @@
         "ja": { "stringUnit": { "state": "translated", "value": "変更を同期しています…" } }
       }
     },
+    "boards.presence.member": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Member" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "メンバー" } }
+      }
+    },
+    "boards.presence.moving_photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Moving a photo" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "写真を移動中" } }
+      }
+    },
+    "boards.presence.reconnecting": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reconnecting editing members" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "編集中のメンバーに再接続しています" } }
+      }
+    },
+    "boards.presence.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Editing now" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "編集中のメンバー" } }
+      }
+    },
+    "boards.presence.you": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "You" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "自分" } }
+      }
+    },
     "groups.create.failed": {
       "extractionState": "manual",
       "localizations": {
