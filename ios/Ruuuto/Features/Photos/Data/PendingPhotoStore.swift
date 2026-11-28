@@ -13,6 +13,8 @@ struct PendingPhotoStore: Sendable {
     struct Entry: Codable, Equatable, Sendable {
         let photoID: UUID
         let boardID: UUID
+        /// 投稿に付ける都市のID（RCNO-29）
+        let cityID: String?
         let width: Int
         let height: Int
         let savedAt: Date
@@ -46,14 +48,14 @@ struct PendingPhotoStore: Sendable {
         return nil
     }
 
-    func save(photoID: UUID, boardID: UUID, photo: PreparedPhoto, now: Date = Date()) throws {
+    func save(photoID: UUID, boardID: UUID, cityID: String? = nil, photo: PreparedPhoto, now: Date = Date()) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var folder = directory
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try? folder.setResourceValues(values)
 
-        let entry = Entry(photoID: photoID, boardID: boardID, width: photo.width, height: photo.height, savedAt: now)
+        let entry = Entry(photoID: photoID, boardID: boardID, cityID: cityID, width: photo.width, height: photo.height, savedAt: now)
         try photo.data.write(to: imageURL(photoID), options: [.atomic, .completeFileProtection])
         try JSONEncoder().encode(entry).write(to: entryURL(photoID), options: [.atomic, .completeFileProtection])
     }

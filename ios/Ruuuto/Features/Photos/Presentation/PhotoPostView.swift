@@ -13,6 +13,9 @@ struct PhotoPostView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var cameraAccess: CameraAccess = .notDetermined
     @State private var showsCamera = false
+    @State private var showsCityPicker = false
+    @Environment(\.locale) private var locale
+    private let cities = CityCatalog.bundled
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -21,6 +24,7 @@ struct PhotoPostView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     preview
+                    if model.preparedPhoto != nil { cityRow }
                     status
                     picker
                 }
@@ -78,6 +82,42 @@ struct PhotoPostView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                 }
+        }
+    }
+
+    /// 投稿に付ける都市（RCNO-29）。都市なしでも投稿できる。
+    private var cityRow: some View {
+        Button {
+            showsCityPicker = true
+        } label: {
+            HStack {
+                Label {
+                    Text("photos.city.row", tableName: "Map")
+                } icon: {
+                    Image(systemName: "mappin.and.ellipse")
+                }
+                Spacer()
+                if let id = model.cityID {
+                    Text(verbatim: cities.city(id: id)?.name(for: locale) ?? id)
+                } else {
+                    Text("photos.city.row.none", tableName: "Map")
+                }
+                if model.canChangeCity {
+                    Image(systemName: "chevron.right").foregroundStyle(RuuutoPalette.sub)
+                }
+            }
+            .font(RuuutoType.body(.body, dynamicTypeSize: dynamicTypeSize))
+            .foregroundStyle(RuuutoPalette.ink)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .disabled(!model.canChangeCity)
+        .accessibilityHint(Text("photos.city.row.hint", tableName: "Map"))
+        .sheet(isPresented: $showsCityPicker) {
+            CityPickerView(catalog: cities, selectedID: model.cityID) { city in
+                model.cityID = city?.id
+            }
         }
     }
 
