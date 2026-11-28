@@ -39,6 +39,25 @@ enum PhotoPostAPI {
         )
     }
 
+    static func withdrawer(client: SupabaseClient) -> PhotoWithdrawer {
+        PhotoWithdrawer(
+            withdraw: { photoID in
+                try await mapErrors {
+                    let photo: PhotoDTO = try await client
+                        .rpc("ruuuto_withdraw_photo", params: ["p_photo_id": photoID])
+                        .execute()
+                        .value
+                    return try photo.model()
+                }
+            },
+            removeImage: { storagePath in
+                try await mapErrors { () async throws -> Void in
+                    _ = try await client.storage.from(bucket).remove(paths: [storagePath])
+                }
+            }
+        )
+    }
+
     /// サーバーのエラーコードを PhotoPostError にする。キャンセルはそのまま伝える。
     static func mapErrors<T: Sendable>(_ body: () async throws -> T) async throws -> T {
         do {

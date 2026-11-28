@@ -81,6 +81,15 @@ final class SignedInWorkspace {
         )
     }
 
+    /// 自分の写真の取り下げ（RCNO-14）。成功したら onWithdrawn で表示から消す。
+    func makePhotoWithdrawal(onWithdrawn: @escaping @MainActor (UUID) -> Void) -> PhotoWithdrawalViewModel {
+        PhotoWithdrawalViewModel(
+            userID: userID,
+            withdrawer: PhotoPostAPI.withdrawer(client: session.client),
+            onWithdrawn: onWithdrawn
+        )
+    }
+
     func showGroups() {
         groupCreation = nil
         groupCreationID = nil

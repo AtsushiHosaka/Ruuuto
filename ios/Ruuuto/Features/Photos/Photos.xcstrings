@@ -52,6 +52,40 @@
         }
       }
     },
+    "photos.common.close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉じる"
+          }
+        }
+      }
+    },
+    "photos.menu.view": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Larger"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "大きく見る"
+          }
+        }
+      }
+    },
     "photos.post.camera": {
       "extractionState": "manual",
       "localizations": {
@@ -388,6 +422,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "写真を投稿"
+          }
+        }
+      }
+    },
+    "photos.withdraw.action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り下げる"
+          }
+        }
+      }
+    },
+    "photos.withdraw.confirm.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It will be removed from everyone’s board and map, and this can’t be undone. You can withdraw photos even after the board closes."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グループの全員のボードとマップから消え、元に戻せません。締切後も取り下げられます。"
+          }
+        }
+      }
+    },
+    "photos.withdraw.confirm.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw this photo?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この写真を取り下げますか？"
+          }
+        }
+      }
+    },
+    "photos.withdraw.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The photo is still shown. Check your connection and try again."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写真はまだ表示されています。通信状態を確かめて、もう一度お試しください。"
+          }
+        }
+      }
+    },
+    "photos.withdraw.failed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t Withdraw"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り下げられませんでした"
+          }
+        }
+      }
+    },
+    "photos.withdraw.forbidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can only withdraw photos you posted."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取り下げられるのは、自分が投稿した写真だけです。"
+          }
+        }
+      }
+    },
+    "photos.withdraw.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try Again"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もう一度取り下げる"
           }
         }
       }
