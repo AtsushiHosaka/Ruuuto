@@ -35,6 +35,181 @@
         }
       }
     },
+    "boards.action.close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Close" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "閉じる" } }
+      }
+    },
+    "boards.current.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "There isn’t an active board right now." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "開催中のボードはありません。" } }
+      }
+    },
+    "boards.current.loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Opening the board…" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ボードを開いています…" } }
+      }
+    },
+    "boards.current.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Try again" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "もう一度試す" } }
+      }
+    },
+    "boards.groups.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "You haven’t joined a group yet." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "参加しているグループはまだありません。" } }
+      }
+    },
+    "boards.groups.load_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t load your groups." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "グループを読み込めませんでした。" } }
+      }
+    },
+    "boards.groups.loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Loading groups…" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "グループを読み込んでいます…" } }
+      }
+    },
+    "boards.groups.switch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Switch group" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "グループを切り替える" } }
+      }
+    },
+    "boards.groups.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Your groups" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "グループ" } }
+      }
+    },
+    "boards.photos.accessibility.canvas": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Shared photo board" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "共有写真ボード" } }
+      }
+    },
+    "boards.photos.accessibility.locked_photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Photo being moved by another participant" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ほかの参加者が移動中の写真" } }
+      }
+    },
+    "boards.photos.accessibility.move_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Drag to move this photo on the board." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ドラッグしてボード上の写真を移動します。" } }
+      }
+    },
+    "boards.photos.accessibility.photo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Photo" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "写真" } }
+      }
+    },
+    "boards.photos.city_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No city" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "都市なし" } }
+      }
+    },
+    "boards.photos.closed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This board is closed, so photos can’t be moved." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "締め切られたボードの写真は移動できません。" } }
+      }
+    },
+    "boards.photos.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Photos posted by your group will appear here." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "グループのみんなが投稿した写真がここに表示されます。" } }
+      }
+    },
+    "boards.photos.fixed_background": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Background photos are fixed in place." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "背景に設定された写真は移動できません。" } }
+      }
+    },
+    "boards.photos.forbidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "You don’t have permission to edit this board." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "このボードを編集する権限がありません。" } }
+      }
+    },
+    "boards.photos.invalid_position": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "That position couldn’t be saved." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "その位置を保存できませんでした。" } }
+      }
+    },
+    "boards.photos.load_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t load the board’s photos." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ボードの写真を読み込めませんでした。" } }
+      }
+    },
+    "boards.photos.loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Loading photos…" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "写真を読み込んでいます…" } }
+      }
+    },
+    "boards.photos.locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Another participant is moving that photo." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "その写真はほかの参加者が移動中です。" } }
+      }
+    },
+    "boards.photos.lost_lock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The move took too long. Try moving the photo again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "移動の有効時間が切れました。もう一度動かしてください。" } }
+      }
+    },
+    "boards.photos.move_error_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t move the photo" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "写真を移動できませんでした" } }
+      }
+    },
+    "boards.photos.move_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The photo returned to its previous position. Try again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "写真を元の位置に戻しました。もう一度お試しください。" } }
+      }
+    },
     "groups.create.failed": {
       "extractionState": "manual",
       "localizations": {

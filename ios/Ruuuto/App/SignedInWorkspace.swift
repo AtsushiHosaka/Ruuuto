@@ -12,6 +12,7 @@ final class SignedInWorkspace {
 
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
+    let boardPhotos: BoardPhotoEditorViewModel
     private let session: SessionModel
     var profile: ProfileViewModel { session.profile }
     private let userID: UUID
@@ -29,6 +30,22 @@ final class SignedInWorkspace {
         let client = session.client
         groups = GroupDirectoryViewModel(loadGroups: { try await GroupDirectoryAPI.list(client: client) })
         currentBoard = CurrentBoardViewModel(loadBoard: { try await CurrentBoardAPI.load(client: client, groupID: $0) })
+        boardPhotos = BoardPhotoEditorViewModel(
+            currentUserID: userID,
+            loadSnapshot: { try await BoardPhotoEditingAPI.loadSnapshot(client: client, boardID: $0) },
+            grabPhoto: { try await BoardPhotoEditingAPI.grab(client: client, photoID: $0) },
+            movePhoto: { photoID, x, y, rotation, scale in
+                try await BoardPhotoEditingAPI.move(
+                    client: client,
+                    photoID: photoID,
+                    x: x,
+                    y: y,
+                    rotation: rotation,
+                    scale: scale
+                )
+            },
+            releasePhoto: { await BoardPhotoEditingAPI.release(client: client, photoID: $0) }
+        )
     }
 
     func start() async {
