@@ -36,6 +36,18 @@ struct BoardPhoto: Identifiable, Equatable, Sendable {
         copy.lockExpiresAt = update.lockExpiresAt
         return copy
     }
+
+    func applying(_ change: BoardPhotoSavedChange) -> BoardPhoto {
+        var copy = self
+        copy.x = change.x
+        copy.y = change.y
+        copy.rotation = change.rotation
+        copy.scale = change.scale
+        copy.layer = change.layer
+        copy.zIndex = change.zIndex
+        copy.revision = change.revision
+        return copy
+    }
 }
 
 struct BoardPhotoUpdate: Equatable, Sendable {
@@ -50,6 +62,27 @@ struct BoardPhotoUpdate: Equatable, Sendable {
     let revision: Int64
     let lockedBy: UUID?
     let lockExpiresAt: Date?
+}
+
+struct BoardPhotoSavedChange: Equatable, Sendable {
+    let id: UUID
+    let boardID: UUID
+    let x: Double
+    let y: Double
+    let rotation: Double
+    let scale: Double
+    let layer: Int
+    let zIndex: Int
+    let revision: Int64
+}
+
+enum BoardPhotoSyncEvent: Equatable, Sendable {
+    case connecting
+    case connected
+    case connectionFailed
+    case photoSaved(BoardPhotoSavedChange)
+    case photoWithdrawn(boardID: UUID, photoID: UUID)
+    case snapshotRequired
 }
 
 struct BoardSnapshot: Equatable, Sendable {

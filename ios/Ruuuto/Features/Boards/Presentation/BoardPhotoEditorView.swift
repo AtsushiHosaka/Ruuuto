@@ -87,6 +87,12 @@ private struct BoardPhotoEditorView: View {
                     .foregroundStyle(RuuutoPalette.muted)
                 }
 
+                if editor.state == .loaded, editor.syncState != .connected {
+                    Label("boards.photos.syncing", systemImage: "arrow.triangle.2.circlepath")
+                        .font(.caption)
+                        .foregroundStyle(RuuutoPalette.muted)
+                }
+
                 editorContent
             }
             .padding(.horizontal, 16)
@@ -94,7 +100,7 @@ private struct BoardPhotoEditorView: View {
         }
         .background(RuuutoPalette.page.ignoresSafeArea())
         .task(id: board.id) {
-            await editor.load(boardID: board.id)
+            await editor.synchronize(boardID: board.id)
         }
         .alert(
             Text("boards.photos.move_error_title"),

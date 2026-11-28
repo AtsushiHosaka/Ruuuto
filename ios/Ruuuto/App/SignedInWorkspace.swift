@@ -44,7 +44,8 @@ final class SignedInWorkspace {
                     scale: scale
                 )
             },
-            releasePhoto: { await BoardPhotoEditingAPI.release(client: client, photoID: $0) }
+            releasePhoto: { await BoardPhotoEditingAPI.release(client: client, photoID: $0) },
+            observeBoard: { BoardPhotoSyncAPI.events(client: client, boardID: $0) }
         )
     }
 

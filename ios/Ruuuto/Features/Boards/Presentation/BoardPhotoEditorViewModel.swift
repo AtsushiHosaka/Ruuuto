@@ -8,6 +8,13 @@ enum BoardPhotoEditorState: Equatable, Sendable {
     case failed(String)
 }
 
+enum BoardPhotoSyncState: Equatable, Sendable {
+    case idle
+    case connecting
+    case connected
+    case reconnecting
+}
+
 @MainActor
 @Observable
 final class BoardPhotoEditorViewModel {
@@ -17,12 +24,14 @@ final class BoardPhotoEditorViewModel {
     private(set) var activePhotoID: UUID?
     private(set) var moveErrorMessage: String?
     private(set) var isEditable = false
+    private(set) var syncState: BoardPhotoSyncState = .idle
 
     private let currentUserID: UUID
     private let loadSnapshot: @MainActor (UUID) async throws -> BoardSnapshot
     private let grabPhoto: @MainActor (UUID) async throws -> BoardPhotoUpdate
     private let movePhoto: @MainActor (UUID, Double, Double, Double, Double) async throws -> BoardPhotoUpdate
     private let releasePhoto: @MainActor (UUID) async -> Void
+    private let observeBoard: @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     @ObservationIgnored private var loadRequestID: UUID?
     @ObservationIgnored private var grabTasks: [UUID: Task<Bool, Never>] = [:]
 
@@ -31,45 +40,71 @@ final class BoardPhotoEditorViewModel {
         loadSnapshot: @escaping @MainActor (UUID) async throws -> BoardSnapshot,
         grabPhoto: @escaping @MainActor (UUID) async throws -> BoardPhotoUpdate,
         movePhoto: @escaping @MainActor (UUID, Double, Double, Double, Double) async throws -> BoardPhotoUpdate,
-        releasePhoto: @escaping @MainActor (UUID) async -> Void
+        releasePhoto: @escaping @MainActor (UUID) async -> Void,
+        observeBoard: @escaping @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     ) {
         self.currentUserID = currentUserID
         self.loadSnapshot = loadSnapshot
         self.grabPhoto = grabPhoto
         self.movePhoto = movePhoto
         self.releasePhoto = releasePhoto
+        self.observeBoard = observeBoard
     }
 
-    func load(boardID: UUID) async {
+    func synchronize(boardID: UUID) async {
         guard !Task.isCancelled else { return }
         let requestID = UUID()
         loadRequestID = requestID
         await cancelActiveMove()
         guard loadRequestID == requestID, !Task.isCancelled else { return }
+        let changedBoard = self.boardID != boardID
         self.boardID = boardID
         state = .loading
+        syncState = .connecting
         moveErrorMessage = nil
-
-        do {
-            let snapshot = try await loadSnapshot(boardID)
-            guard loadRequestID == requestID, !Task.isCancelled, snapshot.boardID == boardID else { return }
-            photos = sorted(snapshot.photos)
-            isEditable = snapshot.isOpen && snapshot.closesAt > Date()
-            state = .loaded
-        } catch is CancellationError {
-            guard loadRequestID == requestID else { return }
-            state = .idle
-        } catch {
-            guard loadRequestID == requestID, !Task.isCancelled else { return }
+        if changedBoard {
             photos = []
             isEditable = false
-            state = .failed(message(for: error, fallbackKey: "boards.photos.load_failed"))
+        }
+
+        for await event in observeBoard(boardID) {
+            guard loadRequestID == requestID, !Task.isCancelled else { break }
+            switch event {
+            case .connecting:
+                syncState = state == .loaded ? .reconnecting : .connecting
+            case .connected:
+                await refreshSnapshot(boardID: boardID, requestID: requestID)
+                guard loadRequestID == requestID, !Task.isCancelled else { break }
+                syncState = .connected
+            case .connectionFailed:
+                syncState = state == .loaded ? .reconnecting : .connecting
+                if state != .loaded {
+                    state = .failed(String(localized: "boards.photos.load_failed"))
+                }
+            case .photoSaved(let change):
+                await apply(change, boardID: boardID, requestID: requestID)
+            case .photoWithdrawn(let eventBoardID, let photoID):
+                applyWithdrawal(boardID: eventBoardID, photoID: photoID)
+            case .snapshotRequired:
+                await refreshSnapshot(boardID: boardID, requestID: requestID)
+            }
+        }
+
+        if loadRequestID == requestID {
+            syncState = .idle
+            if Task.isCancelled, state == .loading {
+                state = .idle
+            }
         }
     }
 
     func reload() async {
-        guard let boardID else { return }
-        await load(boardID: boardID)
+        guard let boardID, let requestID = loadRequestID else { return }
+        if syncState == .connected {
+            await refreshSnapshot(boardID: boardID, requestID: requestID)
+        } else {
+            state = .loading
+        }
     }
 
     @discardableResult
@@ -142,6 +177,46 @@ final class BoardPhotoEditorViewModel {
         guard update.boardID == boardID, let index = photos.firstIndex(where: { $0.id == update.id }) else { return }
         photos[index] = photos[index].applying(update)
         photos = sorted(photos)
+    }
+
+    private func apply(_ change: BoardPhotoSavedChange, boardID: UUID, requestID: UUID) async {
+        guard change.boardID == self.boardID, change.boardID == boardID else { return }
+        guard let index = photos.firstIndex(where: { $0.id == change.id }) else {
+            await refreshSnapshot(boardID: boardID, requestID: requestID)
+            return
+        }
+        guard change.revision > photos[index].revision else { return }
+        photos[index] = photos[index].applying(change)
+        photos = sorted(photos)
+    }
+
+    private func applyWithdrawal(boardID: UUID, photoID: UUID) {
+        guard boardID == self.boardID else { return }
+        grabTasks[photoID]?.cancel()
+        grabTasks[photoID] = nil
+        if activePhotoID == photoID {
+            activePhotoID = nil
+        }
+        photos.removeAll { $0.id == photoID }
+    }
+
+    private func refreshSnapshot(boardID: UUID, requestID: UUID) async {
+        do {
+            let snapshot = try await loadSnapshot(boardID)
+            guard loadRequestID == requestID, !Task.isCancelled, snapshot.boardID == boardID else { return }
+            photos = sorted(snapshot.photos)
+            isEditable = snapshot.isOpen && snapshot.closesAt > Date()
+            state = .loaded
+        } catch is CancellationError {
+            return
+        } catch {
+            guard loadRequestID == requestID, !Task.isCancelled else { return }
+            if state != .loaded {
+                photos = []
+                isEditable = false
+                state = .failed(message(for: error, fallbackKey: "boards.photos.load_failed"))
+            }
+        }
     }
 
     private func sorted(_ photos: [BoardPhoto]) -> [BoardPhoto] {

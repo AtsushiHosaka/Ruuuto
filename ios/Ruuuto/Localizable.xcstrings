@@ -210,6 +210,13 @@
         "ja": { "stringUnit": { "state": "translated", "value": "写真を元の位置に戻しました。もう一度お試しください。" } }
       }
     },
+    "boards.photos.syncing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Syncing changes…" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "変更を同期しています…" } }
+      }
+    },
     "groups.create.failed": {
       "extractionState": "manual",
       "localizations": {
