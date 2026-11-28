@@ -73,6 +73,7 @@ struct HistoryCalendarView: View {
                 RoundedRectangle(cornerRadius: 14).fill(boards.isEmpty ? RuuutoPalette.line.opacity(0.35) : RuuutoPalette.soft)
                 if let board = boards.last(where: { !$0.previewPaths.isEmpty }), let path = board.previewPaths.first {
                     StoredPhotoImage(path: path, images: images)
+                        .fadedBoard(closedAt: board.isOpen ? nil : board.closesAt)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 if state == .loading { ProgressView() }
@@ -158,6 +159,7 @@ struct MonthBoardsView: View {
                 RoundedRectangle(cornerRadius: 8).fill(RuuutoPalette.line.opacity(0.4))
                 if let path = board.previewPaths.first {
                     StoredPhotoImage(path: path, images: images)
+                        .fadedBoard(closedAt: board.isOpen ? nil : board.closesAt)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }

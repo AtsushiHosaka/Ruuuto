@@ -75,6 +75,8 @@ struct PastBoardView: View {
     }
 
     private func canvas(_ snapshot: BoardSnapshot, width: CGFloat) -> some View {
+        // 締切後のボードだけ退色させる（RCNO-28）。背景は対象外
+        let closedAt = snapshot.board.isOpen ? nil : snapshot.board.closesAt
         let unplaced = snapshot.photos.filter { BoardGeometry.isUnplaced($0.placement) }.map(\.id)
         let items = (snapshot.photos.map(BoardItem.photo) + snapshot.decorations.map(BoardItem.decoration))
             .sorted { BoardGeometry.drawOrder($0.placement, $1.placement) }
@@ -84,9 +86,10 @@ struct PastBoardView: View {
             ForEach(items) { item in
                 switch item {
                 case .photo(let photo):
-                    photoView(photo, unplacedIndex: unplaced.firstIndex(of: photo.id), width: width)
+                    photoView(photo, unplacedIndex: unplaced.firstIndex(of: photo.id), width: width, closedAt: closedAt)
                 case .decoration(let decoration):
                     DecorationView(decoration: decoration, boardWidth: width)
+                        .fadedBoard(closedAt: closedAt)
                         .position(decorationCenter(decoration, width: width))
                 }
             }
@@ -103,13 +106,14 @@ struct PastBoardView: View {
         return BoardGeometry.center(of: d.placement, unplacedIndex: nil, boardWidth: width)
     }
 
-    private func photoView(_ photo: BoardPhoto, unplacedIndex: Int?, width: CGFloat) -> some View {
+    private func photoView(_ photo: BoardPhoto, unplacedIndex: Int?, width: CGFloat, closedAt: Date?) -> some View {
         let size = BoardGeometry.photoSize(width: photo.width, height: photo.height, scale: photo.placement.scale, boardWidth: width)
         return StoredPhotoImage(path: photo.storagePath, images: images)
             .frame(width: size.width, height: size.height)
             .clipped()
             .padding(4)
             .background(Color.white)
+            .fadedBoard(closedAt: closedAt)
             .photoContextMenu(
                 target: .init(photoID: photo.id, storagePath: photo.storagePath),
                 postedBy: photo.postedBy,
