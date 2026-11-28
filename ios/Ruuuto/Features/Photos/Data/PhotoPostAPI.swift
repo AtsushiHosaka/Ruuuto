@@ -19,8 +19,8 @@ enum PhotoPostAPI {
                 }
             },
             upload: { storagePath, data in
-                try await mapErrors {
-                    try await client.storage.from(bucket).upload(
+                try await mapErrors { () async throws -> Void in
+                    _ = try await client.storage.from(bucket).upload(
                         storagePath,
                         data: data,
                         options: FileOptions(contentType: PreparedPhoto.contentType, upsert: true)
