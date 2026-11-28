@@ -72,6 +72,11 @@ final class SignedInWorkspace {
         destination = .createGroup
     }
 
+    /// 開催中のボードへ写真を投稿する画面の状態（RCNO-13）
+    func makePhotoPost(boardID: UUID) -> PhotoPostViewModel {
+        PhotoPostViewModel(boardID: boardID, poster: PhotoPostAPI.poster(client: session.client))
+    }
+
     func showGroups() {
         groupCreation = nil
         groupCreationID = nil

@@ -3,6 +3,7 @@ import SwiftUI
 struct SignedInView: View {
     @State private var workspace: SignedInWorkspace
     @State private var signOutError = false
+    @State private var photoPost: PhotoPostViewModel?
 
     init(session: SessionModel, userID: UUID) {
         _workspace = State(initialValue: SignedInWorkspace(session: session, userID: userID))
@@ -28,6 +29,23 @@ struct SignedInView: View {
                     .disabled(workspace.isSigningOut)
                 }
             }
+            // ホーム画面ができるまでの仮の入口（RCNO-13）。開催中のボードがあるときだけ表示する。
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    if case .loaded(let board) = workspace.currentBoard.state {
+                        Button {
+                            photoPost = workspace.makePhotoPost(boardID: board.id)
+                        } label: {
+                            Label {
+                                Text("photos.post.entry", tableName: "Photos")
+                            } icon: {
+                                Image(systemName: "photo.on.rectangle")
+                            }
+                        }
+                    }
+                }
+            }
+            .sheet(item: $photoPost) { PhotoPostView(model: $0) }
             .task { await workspace.start() }
             .task(id: workspace.boardLoadRequestID) { [groupID = workspace.groups.selectedID] in
                 await workspace.currentBoard.selectGroup(groupID)
