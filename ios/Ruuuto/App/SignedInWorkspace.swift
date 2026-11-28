@@ -90,6 +90,25 @@ final class SignedInWorkspace {
         )
     }
 
+    /// 画像の取得はボード、カレンダー、マップで共有する
+    @ObservationIgnored private(set) lazy var photoImages = PhotoImageCache(client: session.client)
+
+    /// 月別カレンダー（RCNO-26）
+    func makeHistory(groupID: UUID) -> HistoryCalendarViewModel {
+        let client = session.client
+        return HistoryCalendarViewModel(groupID: groupID) { month in
+            try await BoardHistoryAPI.history(client: client, groupID: groupID, month: month)
+        }
+    }
+
+    /// 読み取り用のボード（RCNO-26）
+    func makePastBoard(boardID: UUID) -> PastBoardViewModel {
+        let client = session.client
+        return PastBoardViewModel(boardID: boardID) { id in
+            try await BoardHistoryAPI.snapshot(client: client, boardID: id)
+        }
+    }
+
     func showGroups() {
         groupCreation = nil
         groupCreationID = nil
