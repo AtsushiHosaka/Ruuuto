@@ -14,6 +14,8 @@ enum BoardPhotoSyncAPI {
                     let statuses = channel.statusChange
                     let savedPhotos = channel.broadcastStream(event: "photo_saved")
                     let withdrawnPhotos = channel.broadcastStream(event: "photo_withdrawn")
+                    let savedDecorations = channel.broadcastStream(event: "decoration_saved")
+                    let deletedDecorations = channel.broadcastStream(event: "decoration_deleted")
 
                     do {
                         try await withThrowingTaskGroup(of: Void.self) { group in
@@ -48,6 +50,35 @@ enum BoardPhotoSyncAPI {
                                         let photo: WithdrawnPhotoDTO = try decodePayload(from: message)
                                         continuation.yield(
                                             .photoWithdrawn(boardID: photo.boardID, photoID: photo.id)
+                                        )
+                                    } catch {
+                                        continuation.yield(.snapshotRequired)
+                                    }
+                                }
+                            }
+                            group.addTask {
+                                for await message in savedDecorations {
+                                    guard !Task.isCancelled else { return }
+                                    do {
+                                        let decoration: BoardDecorationDTO = try decodePayload(from: message)
+                                        if let textDecoration = decoration.textModel {
+                                            continuation.yield(.decorationSaved(textDecoration))
+                                        }
+                                    } catch {
+                                        continuation.yield(.snapshotRequired)
+                                    }
+                                }
+                            }
+                            group.addTask {
+                                for await message in deletedDecorations {
+                                    guard !Task.isCancelled else { return }
+                                    do {
+                                        let decoration: DeletedDecorationDTO = try decodePayload(from: message)
+                                        continuation.yield(
+                                            .decorationDeleted(
+                                                boardID: decoration.boardID,
+                                                decorationID: decoration.id
+                                            )
                                         )
                                     } catch {
                                         continuation.yield(.snapshotRequired)
@@ -129,6 +160,16 @@ private struct SavedPhotoDTO: Decodable, Sendable {
 }
 
 private struct WithdrawnPhotoDTO: Decodable, Sendable {
+    let id: UUID
+    let boardID: UUID
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case boardID = "board_id"
+    }
+}
+
+private struct DeletedDecorationDTO: Decodable, Sendable {
     let id: UUID
     let boardID: UUID
 

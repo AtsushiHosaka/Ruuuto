@@ -21,8 +21,11 @@ final class BoardPhotoEditorViewModel {
     private(set) var boardID: UUID?
     private(set) var state: BoardPhotoEditorState = .idle
     private(set) var photos: [BoardPhoto] = []
+    private(set) var textDecorations: [BoardTextDecoration] = []
     private(set) var activePhotoID: UUID?
     private(set) var moveErrorMessage: String?
+    private(set) var textErrorMessage: String?
+    private(set) var isSavingText = false
     private(set) var isEditable = false
     private(set) var syncState: BoardPhotoSyncState = .idle
 
@@ -31,9 +34,11 @@ final class BoardPhotoEditorViewModel {
     private let grabPhoto: @MainActor (UUID) async throws -> BoardPhotoUpdate
     private let movePhoto: @MainActor (UUID, Double, Double, Double, Double) async throws -> BoardPhotoUpdate
     private let releasePhoto: @MainActor (UUID) async -> Void
+    private let createTextDecoration: @MainActor (UUID, UUID, String, Double, Double) async throws -> BoardTextDecoration
     private let observeBoard: @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     @ObservationIgnored private var loadRequestID: UUID?
     @ObservationIgnored private var grabTasks: [UUID: Task<Bool, Never>] = [:]
+    @ObservationIgnored private var pendingTextAddition: PendingTextAddition?
 
     init(
         currentUserID: UUID,
@@ -41,6 +46,7 @@ final class BoardPhotoEditorViewModel {
         grabPhoto: @escaping @MainActor (UUID) async throws -> BoardPhotoUpdate,
         movePhoto: @escaping @MainActor (UUID, Double, Double, Double, Double) async throws -> BoardPhotoUpdate,
         releasePhoto: @escaping @MainActor (UUID) async -> Void,
+        addText: @escaping @MainActor (UUID, UUID, String, Double, Double) async throws -> BoardTextDecoration,
         observeBoard: @escaping @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     ) {
         self.currentUserID = currentUserID
@@ -48,6 +54,7 @@ final class BoardPhotoEditorViewModel {
         self.grabPhoto = grabPhoto
         self.movePhoto = movePhoto
         self.releasePhoto = releasePhoto
+        createTextDecoration = addText
         self.observeBoard = observeBoard
     }
 
@@ -62,8 +69,11 @@ final class BoardPhotoEditorViewModel {
         state = .loading
         syncState = .connecting
         moveErrorMessage = nil
+        textErrorMessage = nil
         if changedBoard {
             photos = []
+            textDecorations = []
+            pendingTextAddition = nil
             isEditable = false
         }
 
@@ -85,6 +95,10 @@ final class BoardPhotoEditorViewModel {
                 await apply(change, boardID: boardID, requestID: requestID)
             case .photoWithdrawn(let eventBoardID, let photoID):
                 applyWithdrawal(boardID: eventBoardID, photoID: photoID)
+            case .decorationSaved(let decoration):
+                apply(decoration)
+            case .decorationDeleted(let eventBoardID, let decorationID):
+                applyDecorationDeletion(boardID: eventBoardID, decorationID: decorationID)
             case .snapshotRequired:
                 await refreshSnapshot(boardID: boardID, requestID: requestID)
             }
@@ -167,6 +181,61 @@ final class BoardPhotoEditorViewModel {
         moveErrorMessage = nil
     }
 
+    @discardableResult
+    func addText(_ text: String, x: Double, y: Double) async -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.count <= 200 else {
+            textErrorMessage = String(localized: "boards.decorations.text.invalid")
+            return false
+        }
+        guard let boardID, state == .loaded, isEditable, !isSavingText else {
+            if !isEditable {
+                textErrorMessage = String(localized: "boards.photos.closed")
+            }
+            return false
+        }
+
+        isSavingText = true
+        textErrorMessage = nil
+        defer { isSavingText = false }
+        let request: PendingTextAddition
+        if let pendingTextAddition,
+           pendingTextAddition.boardID == boardID,
+           pendingTextAddition.text == trimmed,
+           pendingTextAddition.x == x,
+           pendingTextAddition.y == y {
+            request = pendingTextAddition
+        } else {
+            request = PendingTextAddition(
+                id: UUID(),
+                boardID: boardID,
+                text: trimmed,
+                x: x,
+                y: y
+            )
+            pendingTextAddition = request
+        }
+        do {
+            let decoration = try await createTextDecoration(request.id, boardID, trimmed, x, y)
+            guard decoration.boardID == boardID else {
+                textErrorMessage = String(localized: "boards.decorations.text.add_failed")
+                return false
+            }
+            pendingTextAddition = nil
+            apply(decoration)
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            textErrorMessage = decorationMessage(for: error)
+            return false
+        }
+    }
+
+    func dismissTextError() {
+        textErrorMessage = nil
+    }
+
     func isLockedByAnotherParticipant(_ photo: BoardPhoto) -> Bool {
         guard let lockedBy = photo.lockedBy, lockedBy != currentUserID,
               let lockExpiresAt = photo.lockExpiresAt else { return false }
@@ -177,6 +246,17 @@ final class BoardPhotoEditorViewModel {
         guard update.boardID == boardID, let index = photos.firstIndex(where: { $0.id == update.id }) else { return }
         photos[index] = photos[index].applying(update)
         photos = sorted(photos)
+    }
+
+    private func apply(_ decoration: BoardTextDecoration) {
+        guard decoration.boardID == boardID else { return }
+        if let index = textDecorations.firstIndex(where: { $0.id == decoration.id }) {
+            guard decoration.revision >= textDecorations[index].revision else { return }
+            textDecorations[index] = decoration
+        } else {
+            textDecorations.append(decoration)
+        }
+        textDecorations = sorted(textDecorations)
     }
 
     private func apply(_ change: BoardPhotoSavedChange, boardID: UUID, requestID: UUID) async {
@@ -200,11 +280,17 @@ final class BoardPhotoEditorViewModel {
         photos.removeAll { $0.id == photoID }
     }
 
+    private func applyDecorationDeletion(boardID: UUID, decorationID: UUID) {
+        guard boardID == self.boardID else { return }
+        textDecorations.removeAll { $0.id == decorationID }
+    }
+
     private func refreshSnapshot(boardID: UUID, requestID: UUID) async {
         do {
             let snapshot = try await loadSnapshot(boardID)
             guard loadRequestID == requestID, !Task.isCancelled, snapshot.boardID == boardID else { return }
             photos = sorted(snapshot.photos)
+            textDecorations = sorted(snapshot.textDecorations)
             isEditable = snapshot.isOpen && snapshot.closesAt > Date()
             state = .loaded
         } catch is CancellationError {
@@ -213,6 +299,7 @@ final class BoardPhotoEditorViewModel {
             guard loadRequestID == requestID, !Task.isCancelled else { return }
             if state != .loaded {
                 photos = []
+                textDecorations = []
                 isEditable = false
                 state = .failed(message(for: error, fallbackKey: "boards.photos.load_failed"))
             }
@@ -221,6 +308,12 @@ final class BoardPhotoEditorViewModel {
 
     private func sorted(_ photos: [BoardPhoto]) -> [BoardPhoto] {
         photos.sorted {
+            ($0.layer, $0.zIndex, $0.id.uuidString) < ($1.layer, $1.zIndex, $1.id.uuidString)
+        }
+    }
+
+    private func sorted(_ decorations: [BoardTextDecoration]) -> [BoardTextDecoration] {
+        decorations.sorted {
             ($0.layer, $0.zIndex, $0.id.uuidString) < ($1.layer, $1.zIndex, $1.id.uuidString)
         }
     }
@@ -262,4 +355,25 @@ final class BoardPhotoEditorViewModel {
             String(localized: fallbackKey)
         }
     }
+
+    private func decorationMessage(for error: Error) -> String {
+        switch error as? BoardDecorationEditingError {
+        case .forbidden:
+            String(localized: "boards.photos.forbidden")
+        case .closedBoard:
+            String(localized: "boards.photos.closed")
+        case .invalidContent:
+            String(localized: "boards.decorations.text.invalid")
+        case .duplicateID, nil:
+            String(localized: "boards.decorations.text.add_failed")
+        }
+    }
+}
+
+private struct PendingTextAddition: Equatable, Sendable {
+    let id: UUID
+    let boardID: UUID
+    let text: String
+    let x: Double
+    let y: Double
 }

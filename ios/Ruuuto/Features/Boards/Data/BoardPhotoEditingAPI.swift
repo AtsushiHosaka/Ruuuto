@@ -22,7 +22,8 @@ enum BoardPhotoEditingAPI {
                 boardID: snapshot.board.id,
                 isOpen: snapshot.board.status == "open",
                 closesAt: snapshot.board.closesAt.value,
-                photos: photos
+                photos: photos,
+                textDecorations: snapshot.decorations.compactMap(\.textModel)
             )
         } catch let error as PostgrestError {
             throw mapped(error) ?? error
@@ -130,6 +131,7 @@ private struct MoveParameters: Encodable {
 private struct SnapshotDTO: Decodable {
     let board: SnapshotBoardDTO
     let photos: [PhotoDTO]
+    let decorations: [BoardDecorationDTO]
 }
 
 private struct SnapshotBoardDTO: Decodable {

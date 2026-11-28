@@ -68,6 +68,9 @@ private struct BoardPhotoEditorView: View {
     @Bindable var presence: BoardPresenceViewModel
     let displayName: String
     let showGroups: () -> Void
+    @State private var isTextComposerPresented = false
+    @State private var textDraft = ""
+    @State private var canvasSize = CGSize(width: 320, height: 500)
 
     var body: some View {
         ScrollView {
@@ -111,6 +114,16 @@ private struct BoardPhotoEditorView: View {
                 )
 
                 editorContent
+
+                if editor.state == .loaded {
+                    BoardDecorationToolbar(
+                        canAddText: editor.isEditable && !editor.isSavingText,
+                        addText: {
+                            editor.dismissTextError()
+                            isTextComposerPresented = true
+                        }
+                    )
+                }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
@@ -137,6 +150,35 @@ private struct BoardPhotoEditorView: View {
                 Text(verbatim: message)
             }
         }
+        .sheet(isPresented: $isTextComposerPresented) {
+            TextDecorationComposer(
+                text: $textDraft,
+                isSaving: editor.isSavingText,
+                errorMessage: editor.textErrorMessage,
+                cancel: {
+                    guard !editor.isSavingText else { return }
+                    textDraft = ""
+                    editor.dismissTextError()
+                    isTextComposerPresented = false
+                },
+                add: submitTextDecoration
+            )
+            .presentationDetents([.medium])
+            .interactiveDismissDisabled(editor.isSavingText)
+        }
+    }
+
+    private func submitTextDecoration() {
+        let origin = CGPoint(
+            x: max(12, (canvasSize.width - 220) / 2),
+            y: max(12, (canvasSize.height - 44) / 2)
+        )
+        Task {
+            if await editor.addText(textDraft, x: Double(origin.x), y: Double(origin.y)) {
+                textDraft = ""
+                isTextComposerPresented = false
+            }
+        }
     }
 
     @ViewBuilder
@@ -156,14 +198,18 @@ private struct BoardPhotoEditorView: View {
                 .tint(RuuutoPalette.accent)
             }
             .frame(maxWidth: .infinity, minHeight: 360)
-        case .loaded where editor.photos.isEmpty:
-            Text("boards.photos.empty")
-                .foregroundStyle(RuuutoPalette.muted)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, minHeight: 360)
         case .loaded:
             BoardPhotoCanvas(editor: editor, presence: presence)
                 .frame(height: 500)
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(key: BoardCanvasSizePreferenceKey.self, value: proxy.size)
+                    }
+                }
+                .onPreferenceChange(BoardCanvasSizePreferenceKey.self) { size in
+                    guard size.width > 0, size.height > 0 else { return }
+                    canvasSize = size
+                }
         }
     }
 }
@@ -179,6 +225,13 @@ private struct BoardPhotoCanvas: View {
             let canvasSize = proxy.size
             ZStack(alignment: .topLeading) {
                 BoardDotGrid()
+
+                if editor.photos.isEmpty, editor.textDecorations.isEmpty {
+                    Text("boards.photos.empty")
+                        .foregroundStyle(RuuutoPalette.soft)
+                        .multilineTextAlignment(.center)
+                        .frame(width: canvasSize.width, height: canvasSize.height)
+                }
 
                 ForEach(editor.photos) { photo in
                     let photoSize = cardSize(for: photo)
@@ -202,6 +255,11 @@ private struct BoardPhotoCanvas: View {
                     .gesture(dragGesture(for: photo, cardSize: photoSize, canvasSize: canvasSize))
                     .allowsHitTesting(editor.isEditable && photo.layer > 0)
                     .accessibilityHint(editor.isEditable ? Text("boards.photos.accessibility.move_hint") : Text(verbatim: ""))
+                }
+
+                ForEach(editor.textDecorations) { decoration in
+                    BoardTextDecorationView(decoration: decoration)
+                        .offset(x: CGFloat(decoration.x), y: CGFloat(decoration.y))
                 }
 
                 ForEach(remoteCursorMembers) { member in
@@ -283,6 +341,129 @@ private struct BoardPhotoCanvas: View {
         return CGPoint(
             x: min(max(CGFloat(photo.x) + translation.width, 0), maximumX),
             y: min(max(CGFloat(photo.y) + translation.height, 0), maximumY)
+        )
+    }
+}
+
+private struct BoardCanvasSizePreferenceKey: PreferenceKey {
+    static let defaultValue: CGSize = .zero
+
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        value = nextValue()
+    }
+}
+
+private struct BoardDecorationToolbar: View {
+    let canAddText: Bool
+    let addText: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(action: addText) {
+                Text(verbatim: "あ")
+                    .font(RuuutoType.hand(.title3))
+                    .frame(width: 42, height: 42)
+                    .background(RuuutoPalette.soft.opacity(0.55))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(RuuutoPalette.accent)
+            .disabled(!canAddText)
+            .opacity(canAddText ? 1 : 0.45)
+            .accessibilityLabel("boards.decorations.text.add")
+
+            Text("boards.decorations.text.add")
+                .font(.caption)
+                .foregroundStyle(RuuutoPalette.muted)
+
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+    }
+}
+
+private struct TextDecorationComposer: View {
+    @Binding var text: String
+    let isSaving: Bool
+    let errorMessage: String?
+    let cancel: () -> Void
+    let add: () -> Void
+
+    private var canAdd: Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && trimmed.count <= 200 && !isSaving
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("boards.decorations.text.placeholder", text: $text, axis: .vertical)
+                        .lineLimit(3...6)
+                        .disabled(isSaving)
+
+                    HStack {
+                        Spacer()
+                        Text(verbatim: "\(text.count)/200")
+                            .font(.caption)
+                            .foregroundStyle(text.count <= 200 ? RuuutoPalette.muted : .red)
+                    }
+                } header: {
+                    Text("boards.decorations.text.input_title")
+                }
+
+                if let errorMessage {
+                    Text(verbatim: errorMessage)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("boards.decorations.text.title")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("boards.decorations.text.cancel", action: cancel)
+                        .disabled(isSaving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSaving {
+                        ProgressView()
+                            .accessibilityLabel("boards.decorations.text.saving")
+                    } else {
+                        Button("boards.decorations.text.confirm", action: add)
+                            .disabled(!canAdd)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct BoardTextDecorationView: View {
+    let decoration: BoardTextDecoration
+
+    var body: some View {
+        Text(verbatim: decoration.text)
+            .font(RuuutoType.hand(.title3))
+            .foregroundStyle(.white)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 220)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(decorationColor)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .shadow(color: .black.opacity(0.28), radius: 6, y: 3)
+            .rotationEffect(.degrees(decoration.rotation))
+            .scaleEffect(decoration.scale)
+            .allowsHitTesting(false)
+            .accessibilityLabel(Text(verbatim: decoration.text))
+    }
+
+    private var decorationColor: Color {
+        let hex = decoration.colorHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard hex.count == 6, let value = UInt64(hex, radix: 16) else { return RuuutoPalette.accent }
+        return Color(
+            red: Double((value >> 16) & 0xff) / 255,
+            green: Double((value >> 8) & 0xff) / 255,
+            blue: Double(value & 0xff) / 255
         )
     }
 }

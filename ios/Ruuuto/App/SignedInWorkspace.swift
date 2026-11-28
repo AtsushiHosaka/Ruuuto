@@ -46,6 +46,16 @@ final class SignedInWorkspace {
                 )
             },
             releasePhoto: { await BoardPhotoEditingAPI.release(client: client, photoID: $0) },
+            addText: { decorationID, boardID, text, x, y in
+                try await BoardDecorationAPI.addText(
+                    client: client,
+                    decorationID: decorationID,
+                    boardID: boardID,
+                    text: text,
+                    x: x,
+                    y: y
+                )
+            },
             observeBoard: { BoardPhotoSyncAPI.events(client: client, boardID: $0) }
         )
         boardPresence = BoardPresenceViewModel(

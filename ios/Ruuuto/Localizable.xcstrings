@@ -63,6 +63,69 @@
         "ja": { "stringUnit": { "state": "translated", "value": "もう一度試す" } }
       }
     },
+    "boards.decorations.text.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add text" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字を置く" } }
+      }
+    },
+    "boards.decorations.text.add_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t add the text. Try again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字を追加できませんでした。もう一度お試しください。" } }
+      }
+    },
+    "boards.decorations.text.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "キャンセル" } }
+      }
+    },
+    "boards.decorations.text.confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "置く" } }
+      }
+    },
+    "boards.decorations.text.input_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Text" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字" } }
+      }
+    },
+    "boards.decorations.text.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Enter between 1 and 200 characters." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "1〜200文字で入力してください。" } }
+      }
+    },
+    "boards.decorations.text.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Write something for the board" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ボードに置く文字を入力" } }
+      }
+    },
+    "boards.decorations.text.saving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Adding text" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字を追加しています" } }
+      }
+    },
+    "boards.decorations.text.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add text" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字を置く" } }
+      }
+    },
     "boards.groups.empty": {
       "extractionState": "manual",
       "localizations": {
