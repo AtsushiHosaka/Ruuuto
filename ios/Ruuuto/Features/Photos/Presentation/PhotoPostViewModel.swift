@@ -35,6 +35,8 @@ final class PhotoPostViewModel {
 
     let boardID: UUID
     private(set) var state: State = .choosing
+    /// 投稿に付ける都市のID（RCNO-29）。nil なら都市を共有しない。写真を選び直しても残す。
+    var cityID: String?
 
     /// 投稿IDは写真を選んだ時点で決める。同じ写真の送り直しでは同じIDを使う。
     @ObservationIgnored private(set) var photoID = UUID()
@@ -60,6 +62,7 @@ final class PhotoPostViewModel {
         // 前回送れなかった写真があれば、同じ投稿IDで送り直せる状態に戻す（RCNO-15）
         if let (entry, photo) = pendingStore?.latest(boardID: boardID) {
             photoID = entry.photoID
+            cityID = entry.cityID
             state = .failed(photo, .post(.retryable))
         }
     }
@@ -70,6 +73,13 @@ final class PhotoPostViewModel {
         case .failed(let photo, _): photo
         case .choosing, .preparing, .posted: nil
         }
+    }
+
+    /// 都市を変えられるのは、まだ送っていない写真だけ。一度送り始めた写真はサーバーに都市ごと
+    /// 登録されている可能性があり、同じIDの送り直しでは最初の都市のまま返るため。
+    var canChangeCity: Bool {
+        if case .previewing = state { return true }
+        return false
     }
 
     var isPosting: Bool {
@@ -129,15 +139,16 @@ final class PhotoPostViewModel {
     }
 
     @discardableResult
-    func submit(city: String? = nil) async -> PostedPhoto? {
+    func submit() async -> PostedPhoto? {
         guard canSubmit, let photo = preparedPhoto else { return nil }
         let photoID = self.photoID
         let selection = selectionID
+        let city = cityID
 
         do {
             state = .posting(photo, .starting)
             // 送信中にアプリが終了・再起動しても、同じIDで送り直せるよう先に残す。確定したら消す。
-            try? pendingStore?.save(photoID: photoID, boardID: boardID, photo: photo)
+            try? pendingStore?.save(photoID: photoID, boardID: boardID, cityID: city, photo: photo)
             var posted = try await poster.begin(photoID, boardID, city, photo.width, photo.height)
             // 前回の送り直しで確定まで済んでいれば、アップロードと確定は省く
             if posted.status == .pending {
