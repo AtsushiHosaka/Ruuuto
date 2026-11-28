@@ -20,4 +20,8 @@ enum BoardDecorationEditingError: Error, Equatable, Sendable {
     case closedBoard
     case duplicateID
     case invalidContent
+    case lockedByAnotherParticipant
+    case lostLock
+    case immutable
+    case fixedBackground
 }

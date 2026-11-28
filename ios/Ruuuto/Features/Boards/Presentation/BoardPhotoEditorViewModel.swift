@@ -34,6 +34,10 @@ final class BoardPhotoEditorViewModel {
     private(set) var isSavingPen = false
     private(set) var stampErrorMessage: String?
     private(set) var isSavingStamp = false
+    private(set) var selectedDecorationID: UUID?
+    private(set) var activeDecorationID: UUID?
+    private(set) var decorationErrorMessage: String?
+    private(set) var isUpdatingDecoration = false
     private(set) var isEditable = false
     private(set) var syncState: BoardPhotoSyncState = .idle
 
@@ -51,12 +55,19 @@ final class BoardPhotoEditorViewModel {
         Double,
         Double
     ) async throws -> BoardStampDecoration
+    private let grabDecoration: @MainActor (UUID) async throws -> BoardDecorationItem
+    private let moveDecoration: @MainActor (UUID, Double, Double, Double, Double) async throws -> BoardDecorationItem
+    private let releaseDecoration: @MainActor (UUID) async -> Void
+    private let editTextDecoration: @MainActor (UUID, String, String) async throws -> BoardDecorationItem
+    private let editStampDecoration: @MainActor (UUID, BoardStampKind) async throws -> BoardDecorationItem
+    private let deleteDecoration: @MainActor (UUID) async throws -> Bool
     private let observeBoard: @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     @ObservationIgnored private var loadRequestID: UUID?
     @ObservationIgnored private var grabTasks: [UUID: Task<Bool, Never>] = [:]
     @ObservationIgnored private var pendingTextAddition: PendingTextAddition?
     @ObservationIgnored private var pendingPenAddition: PendingPenAddition?
     @ObservationIgnored private var pendingStampAddition: PendingStampAddition?
+    @ObservationIgnored private var decorationGrabTask: Task<Bool, Never>?
 
     init(
         currentUserID: UUID,
@@ -73,6 +84,12 @@ final class BoardPhotoEditorViewModel {
             Double,
             Double
         ) async throws -> BoardStampDecoration,
+        grabDecoration: @escaping @MainActor (UUID) async throws -> BoardDecorationItem,
+        moveDecoration: @escaping @MainActor (UUID, Double, Double, Double, Double) async throws -> BoardDecorationItem,
+        releaseDecoration: @escaping @MainActor (UUID) async -> Void,
+        editTextDecoration: @escaping @MainActor (UUID, String, String) async throws -> BoardDecorationItem,
+        editStampDecoration: @escaping @MainActor (UUID, BoardStampKind) async throws -> BoardDecorationItem,
+        deleteDecoration: @escaping @MainActor (UUID) async throws -> Bool,
         observeBoard: @escaping @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     ) {
         self.currentUserID = currentUserID
@@ -83,6 +100,12 @@ final class BoardPhotoEditorViewModel {
         createTextDecoration = addText
         createPenDecoration = addPen
         createStampDecoration = addStamp
+        self.grabDecoration = grabDecoration
+        self.moveDecoration = moveDecoration
+        self.releaseDecoration = releaseDecoration
+        self.editTextDecoration = editTextDecoration
+        self.editStampDecoration = editStampDecoration
+        self.deleteDecoration = deleteDecoration
         self.observeBoard = observeBoard
     }
 
@@ -91,6 +114,7 @@ final class BoardPhotoEditorViewModel {
         let requestID = UUID()
         loadRequestID = requestID
         await cancelActiveMove()
+        await cancelActiveDecorationMove()
         guard loadRequestID == requestID, !Task.isCancelled else { return }
         let changedBoard = self.boardID != boardID
         self.boardID = boardID
@@ -100,6 +124,7 @@ final class BoardPhotoEditorViewModel {
         textErrorMessage = nil
         penErrorMessage = nil
         stampErrorMessage = nil
+        decorationErrorMessage = nil
         if changedBoard {
             photos = []
             textDecorations = []
@@ -110,6 +135,7 @@ final class BoardPhotoEditorViewModel {
             pendingTextAddition = nil
             pendingPenAddition = nil
             pendingStampAddition = nil
+            selectedDecorationID = nil
             isEditable = false
         }
 
@@ -400,6 +426,92 @@ final class BoardPhotoEditorViewModel {
         stampErrorMessage = nil
     }
 
+    var selectedDecoration: BoardDecorationItem? {
+        guard let selectedDecorationID else { return nil }
+        return decoration(id: selectedDecorationID)
+    }
+
+    func selectDecoration(_ id: UUID?) {
+        selectedDecorationID = id
+        decorationErrorMessage = nil
+    }
+
+    func canDelete(_ item: BoardDecorationItem) -> Bool {
+        isEditable && item.createdBy == currentUserID
+    }
+
+    @discardableResult
+    func beginMovingDecoration(_ id: UUID) -> Bool {
+        guard isEditable, activeDecorationID == nil, let item = decoration(id: id), item.isMovable else { return false }
+        selectedDecorationID = id
+        activeDecorationID = id
+        decorationErrorMessage = nil
+        decorationGrabTask = Task { [weak self] in
+            guard let self else { return false }
+            do {
+                self.apply(try await self.grabDecoration(id))
+                return true
+            } catch is CancellationError {
+                return false
+            } catch {
+                self.decorationErrorMessage = self.decorationMessage(for: error)
+                return false
+            }
+        }
+        return true
+    }
+
+    func commitDecorationMove(id: UUID, x: Double, y: Double) async {
+        guard activeDecorationID == id, let item = decoration(id: id) else { return }
+        let grabbed = await decorationGrabTask?.value ?? false
+        decorationGrabTask = nil
+        guard grabbed else { activeDecorationID = nil; return }
+        do {
+            apply(try await moveDecoration(id, x, y, item.rotation, item.scale))
+        } catch {
+            decorationErrorMessage = decorationMessage(for: error)
+            await releaseDecoration(id)
+        }
+        activeDecorationID = nil
+    }
+
+    @discardableResult
+    func updateSelectedText(_ text: String) async -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, text.count <= 200,
+              case .text(let current)? = selectedDecoration else { return false }
+        return await updateDecoration(current.id) {
+            try await self.editTextDecoration(current.id, text, current.colorHex)
+        }
+    }
+
+    @discardableResult
+    func updateSelectedStamp(_ stamp: BoardStampKind) async -> Bool {
+        guard case .stamp(let current)? = selectedDecoration else { return false }
+        return await updateDecoration(current.id) {
+            try await self.editStampDecoration(current.id, stamp)
+        }
+    }
+
+    @discardableResult
+    func deleteSelectedDecoration() async -> Bool {
+        guard let item = selectedDecoration, canDelete(item), !isUpdatingDecoration else { return false }
+        isUpdatingDecoration = true
+        decorationErrorMessage = nil
+        defer { isUpdatingDecoration = false }
+        do {
+            _ = try await deleteDecoration(item.id)
+            applyDecorationDeletion(boardID: item.boardID, decorationID: item.id)
+            selectedDecorationID = nil
+            return true
+        } catch {
+            decorationErrorMessage = decorationMessage(for: error)
+            return false
+        }
+    }
+
+    func dismissDecorationError() { decorationErrorMessage = nil }
+
     func isLockedByAnotherParticipant(_ photo: BoardPhoto) -> Bool {
         guard let lockedBy = photo.lockedBy, lockedBy != currentUserID,
               let lockExpiresAt = photo.lockExpiresAt else { return false }
@@ -445,6 +557,41 @@ final class BoardPhotoEditorViewModel {
         stampDecorations = sorted(stampDecorations)
     }
 
+    private func apply(_ item: BoardDecorationItem) {
+        switch item {
+        case .text(let value): apply(value)
+        case .stamp(let value): apply(value)
+        case .pen(let value): apply(value)
+        }
+    }
+
+    private func decoration(id: UUID) -> BoardDecorationItem? {
+        if let value = textDecorations.first(where: { $0.id == id }) { return .text(value) }
+        if let value = stampDecorations.first(where: { $0.id == id }) { return .stamp(value) }
+        if let value = penDecorations.first(where: { $0.id == id }) { return .pen(value) }
+        return nil
+    }
+
+    private func updateDecoration(
+        _ id: UUID,
+        operation: @escaping @MainActor () async throws -> BoardDecorationItem
+    ) async -> Bool {
+        guard isEditable, !isUpdatingDecoration else { return false }
+        isUpdatingDecoration = true
+        decorationErrorMessage = nil
+        defer { isUpdatingDecoration = false }
+        do {
+            apply(try await grabDecoration(id))
+            apply(try await operation())
+            await releaseDecoration(id)
+            return true
+        } catch {
+            decorationErrorMessage = decorationMessage(for: error)
+            await releaseDecoration(id)
+            return false
+        }
+    }
+
     private func apply(_ change: BoardPhotoSavedChange, boardID: UUID, requestID: UUID) async {
         guard change.boardID == self.boardID, change.boardID == boardID else { return }
         guard let index = photos.firstIndex(where: { $0.id == change.id }) else {
@@ -471,6 +618,7 @@ final class BoardPhotoEditorViewModel {
         textDecorations.removeAll { $0.id == decorationID }
         penDecorations.removeAll { $0.id == decorationID }
         stampDecorations.removeAll { $0.id == decorationID }
+        if selectedDecorationID == decorationID { selectedDecorationID = nil }
     }
 
     private func refreshSnapshot(boardID: UUID, requestID: UUID) async {
@@ -536,6 +684,16 @@ final class BoardPhotoEditorViewModel {
         }
     }
 
+    private func cancelActiveDecorationMove() async {
+        let decorationID = activeDecorationID
+        let grabbed = await decorationGrabTask?.value ?? false
+        decorationGrabTask = nil
+        activeDecorationID = nil
+        if grabbed, let decorationID {
+            await releaseDecoration(decorationID)
+        }
+    }
+
     private func finishMoving(_ photoID: UUID) {
         guard activePhotoID == photoID else { return }
         activePhotoID = nil
@@ -572,8 +730,21 @@ final class BoardPhotoEditorViewModel {
             String(localized: "boards.photos.closed")
         case .invalidContent:
             String(localized: invalidKey)
-        case .duplicateID, nil:
+        case .duplicateID, .lockedByAnotherParticipant, .lostLock, .immutable, .fixedBackground, nil:
             String(localized: failureKey)
+        }
+    }
+
+    private func decorationMessage(for error: Error) -> String {
+        switch error as? BoardDecorationEditingError {
+        case .forbidden: String(localized: "boards.decorations.edit.forbidden")
+        case .closedBoard: String(localized: "boards.photos.closed")
+        case .lockedByAnotherParticipant: String(localized: "boards.decorations.edit.locked")
+        case .lostLock: String(localized: "boards.decorations.edit.lost_lock")
+        case .immutable: String(localized: "boards.decorations.edit.immutable")
+        case .fixedBackground: String(localized: "boards.photos.fixed_background")
+        case .invalidContent, .duplicateID: String(localized: "boards.decorations.edit.failed")
+        case nil: String(localized: "boards.decorations.edit.failed")
         }
     }
 }

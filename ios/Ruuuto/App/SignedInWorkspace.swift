@@ -74,6 +74,30 @@ final class SignedInWorkspace {
                     y: y
                 )
             },
+            grabDecoration: { try await BoardDecorationAPI.grab(client: client, decorationID: $0) },
+            moveDecoration: { decorationID, x, y, rotation, scale in
+                try await BoardDecorationAPI.move(
+                    client: client,
+                    decorationID: decorationID,
+                    x: x,
+                    y: y,
+                    rotation: rotation,
+                    scale: scale
+                )
+            },
+            releaseDecoration: { await BoardDecorationAPI.release(client: client, decorationID: $0) },
+            editTextDecoration: { id, text, color in
+                try await BoardDecorationAPI.editText(
+                    client: client,
+                    decorationID: id,
+                    text: text,
+                    color: color
+                )
+            },
+            editStampDecoration: { id, stamp in
+                try await BoardDecorationAPI.editStamp(client: client, decorationID: id, stamp: stamp)
+            },
+            deleteDecoration: { try await BoardDecorationAPI.delete(client: client, decorationID: $0) },
             observeBoard: { BoardPhotoSyncAPI.events(client: client, boardID: $0) }
         )
         boardPresence = BoardPresenceViewModel(

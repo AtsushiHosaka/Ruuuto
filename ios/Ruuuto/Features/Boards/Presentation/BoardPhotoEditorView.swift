@@ -74,6 +74,10 @@ private struct BoardPhotoEditorView: View {
     @State private var selectedStamp: BoardStampKind?
     @State private var textDraft = ""
     @State private var canvasSize = CGSize(width: 320, height: 500)
+    @State private var isDecorationEditorPresented = false
+    @State private var isDeleteConfirmationPresented = false
+    @State private var decorationTextDraft = ""
+    @State private var decorationStampDraft = BoardStampKind.heart
 
     var body: some View {
         ScrollView {
@@ -118,6 +122,17 @@ private struct BoardPhotoEditorView: View {
 
                 editorContent
 
+                if let selected = editor.selectedDecoration {
+                    BoardSelectedDecorationBar(
+                        item: selected,
+                        canEdit: editor.isEditable && !editor.isUpdatingDecoration,
+                        canDelete: editor.canDelete(selected) && !editor.isUpdatingDecoration,
+                        edit: { presentEditor(for: selected) },
+                        delete: { isDeleteConfirmationPresented = true },
+                        close: { editor.selectDecoration(nil) }
+                    )
+                }
+
                 if editor.state == .loaded {
                     BoardDecorationToolbar(
                         canDecorate: editor.isEditable && !editor.isSavingText && !editor.isSavingPen
@@ -125,6 +140,7 @@ private struct BoardPhotoEditorView: View {
                         isPenEnabled: isPenEnabled,
                         selectedStamp: selectedStamp,
                         addText: {
+                            editor.selectDecoration(nil)
                             isPenEnabled = false
                             selectedStamp = nil
                             editor.discardPendingPenStroke()
@@ -133,6 +149,7 @@ private struct BoardPhotoEditorView: View {
                             isTextComposerPresented = true
                         },
                         selectStamp: {
+                            editor.selectDecoration(nil)
                             isPenEnabled = false
                             selectedStamp = nil
                             editor.discardPendingPenStroke()
@@ -140,6 +157,7 @@ private struct BoardPhotoEditorView: View {
                             isStampPickerPresented = true
                         },
                         togglePen: {
+                            editor.selectDecoration(nil)
                             selectedStamp = nil
                             editor.discardPendingStamp()
                             if isPenEnabled {
@@ -165,6 +183,12 @@ private struct BoardPhotoEditorView: View {
         }
         .task(id: PresenceTaskID(boardID: board.id, displayName: displayName)) {
             await presence.synchronize(boardID: board.id, displayName: displayName)
+        }
+        .onChange(of: editor.selectedDecorationID) { _, selectedID in
+            if selectedID == nil {
+                isDecorationEditorPresented = false
+                isDeleteConfirmationPresented = false
+            }
         }
         .alert(
             Text("boards.photos.move_error_title"),
@@ -208,6 +232,45 @@ private struct BoardPhotoEditorView: View {
                 }
             )
             .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $isDecorationEditorPresented) {
+            if let selected = editor.selectedDecoration {
+                DecorationEditor(
+                    item: selected,
+                    text: $decorationTextDraft,
+                    stamp: $decorationStampDraft,
+                    isSaving: editor.isUpdatingDecoration,
+                    errorMessage: editor.decorationErrorMessage,
+                    cancel: { isDecorationEditorPresented = false },
+                    save: saveSelectedDecoration
+                )
+                .presentationDetents([.medium])
+                .interactiveDismissDisabled(editor.isUpdatingDecoration)
+            }
+        }
+        .alert(
+            Text("boards.decorations.edit.delete_title"),
+            isPresented: $isDeleteConfirmationPresented
+        ) {
+            Button("boards.decorations.edit.delete", role: .destructive) {
+                Task { _ = await editor.deleteSelectedDecoration() }
+            }
+            Button("boards.decorations.edit.cancel", role: .cancel) {}
+        } message: {
+            Text("boards.decorations.edit.delete_message")
+        }
+        .alert(
+            Text("boards.decorations.edit.error_title"),
+            isPresented: Binding(
+                get: { editor.decorationErrorMessage != nil },
+                set: { if !$0 { editor.dismissDecorationError() } }
+            )
+        ) {
+            Button("boards.action.close", role: .cancel) { editor.dismissDecorationError() }
+        } message: {
+            if let message = editor.decorationErrorMessage {
+                Text(verbatim: message)
+            }
         }
         .alert(
             Text("boards.decorations.pen.save_error_title"),
@@ -264,6 +327,33 @@ private struct BoardPhotoEditorView: View {
         }
     }
 
+    private func presentEditor(for item: BoardDecorationItem) {
+        switch item {
+        case .text(let decoration):
+            decorationTextDraft = decoration.text
+        case .stamp(let decoration):
+            decorationStampDraft = decoration.stamp
+        case .pen:
+            return
+        }
+        isDecorationEditorPresented = true
+    }
+
+    private func saveSelectedDecoration() {
+        Task {
+            let saved: Bool
+            switch editor.selectedDecoration {
+            case .text:
+                saved = await editor.updateSelectedText(decorationTextDraft)
+            case .stamp:
+                saved = await editor.updateSelectedStamp(decorationStampDraft)
+            case .pen, nil:
+                saved = false
+            }
+            if saved { isDecorationEditorPresented = false }
+        }
+    }
+
     @ViewBuilder
     private var editorContent: some View {
         switch editor.state {
@@ -309,6 +399,8 @@ private struct BoardPhotoCanvas: View {
     @Binding var selectedStamp: BoardStampKind?
     @State private var dragTranslations: [UUID: CGSize] = [:]
     @State private var pendingOrigins: [UUID: CGPoint] = [:]
+    @State private var decorationDragTranslations: [UUID: CGSize] = [:]
+    @State private var pendingDecorationPositions: [UUID: CGPoint] = [:]
     @State private var draftPenPoints: [BoardPenPoint] = []
 
     var body: some View {
@@ -352,15 +444,40 @@ private struct BoardPhotoCanvas: View {
                 ForEach(canvasDecorations) { decoration in
                     switch decoration {
                     case .text(let text):
+                        let position = decorationPosition(for: .text(text), canvasSize: canvasSize)
                         BoardTextDecorationView(decoration: text)
-                            .offset(
-                                x: BoardCoordinateConverter.screen(text.x, length: canvasSize.width),
-                                y: BoardCoordinateConverter.screen(text.y, length: canvasSize.height)
-                            )
+                            .overlay { selectionOutline(isSelected: editor.selectedDecorationID == text.id) }
+                            .offset(x: position.x, y: position.y)
+                            .onTapGesture { editor.selectDecoration(text.id) }
+                            .simultaneousGesture(decorationDragGesture(for: .text(text), canvasSize: canvasSize))
+                            .allowsHitTesting(canSelectDecorations)
                     case .pen(let pen):
                         BoardPenDecorationView(decoration: pen, canvasSize: canvasSize)
+                        let bounds = penSelectionBounds(pen, canvasSize: canvasSize)
+                        Rectangle()
+                            .fill(.clear)
+                            .overlay {
+                                if editor.selectedDecorationID == pen.id {
+                                    Rectangle().stroke(RuuutoPalette.accent, style: StrokeStyle(lineWidth: 2, dash: [5]))
+                                }
+                            }
+                            .frame(width: bounds.width, height: bounds.height)
+                            .position(x: bounds.midX, y: bounds.midY)
+                            .contentShape(Rectangle())
+                            .onTapGesture { editor.selectDecoration(pen.id) }
+                            .allowsHitTesting(canSelectDecorations)
+                            .accessibilityLabel("boards.decorations.edit.pen")
                     case .stamp(let stamp):
-                        BoardStampDecorationView(decoration: stamp, canvasSize: canvasSize)
+                        let position = decorationPosition(for: .stamp(stamp), canvasSize: canvasSize)
+                        BoardStampView(stamp: stamp.stamp)
+                            .rotationEffect(.degrees(stamp.rotation))
+                            .scaleEffect(stamp.scale)
+                            .padding(5)
+                            .overlay { selectionOutline(isSelected: editor.selectedDecorationID == stamp.id) }
+                            .position(position)
+                            .onTapGesture { editor.selectDecoration(stamp.id) }
+                            .simultaneousGesture(decorationDragGesture(for: .stamp(stamp), canvasSize: canvasSize))
+                            .allowsHitTesting(canSelectDecorations)
                     }
                 }
 
@@ -433,6 +550,9 @@ private struct BoardPhotoCanvas: View {
                 presence.setCursor(nil)
             }
         }
+        .onChange(of: selectedStamp) { _, stamp in
+            if stamp != nil { editor.selectDecoration(nil) }
+        }
         .onDisappear {
             draftPenPoints = []
             presence.setCursor(nil)
@@ -474,6 +594,79 @@ private struct BoardPhotoCanvas: View {
                     presence.setEditingPhotoID(nil)
                 }
             }
+    }
+
+    private var canSelectDecorations: Bool {
+        !isPenEnabled && selectedStamp == nil && editor.isEditable && !editor.isUpdatingDecoration
+    }
+
+    private func decorationDragGesture(for item: BoardDecorationItem, canvasSize: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .named(BoardCanvasCoordinateSpace.name))
+            .onChanged { value in
+                if decorationDragTranslations[item.id] == nil {
+                    guard editor.beginMovingDecoration(item.id) else { return }
+                }
+                decorationDragTranslations[item.id] = value.translation
+                presence.setCursor(
+                    BoardCursorPosition(
+                        x: Double(value.location.x / max(canvasSize.width, 1)),
+                        y: Double(value.location.y / max(canvasSize.height, 1))
+                    )
+                )
+            }
+            .onEnded { value in
+                guard decorationDragTranslations.removeValue(forKey: item.id) != nil else { return }
+                presence.setCursor(nil)
+                let position = CGPoint(
+                    x: min(max(BoardCoordinateConverter.screen(item.x, length: canvasSize.width) + value.translation.width, 0), canvasSize.width),
+                    y: min(max(BoardCoordinateConverter.screen(item.y, length: canvasSize.height) + value.translation.height, 0), canvasSize.height)
+                )
+                pendingDecorationPositions[item.id] = position
+                Task {
+                    await editor.commitDecorationMove(
+                        id: item.id,
+                        x: BoardCoordinateConverter.normalized(position.x, length: canvasSize.width),
+                        y: BoardCoordinateConverter.normalized(position.y, length: canvasSize.height)
+                    )
+                    pendingDecorationPositions[item.id] = nil
+                }
+            }
+    }
+
+    private func decorationPosition(for item: BoardDecorationItem, canvasSize: CGSize) -> CGPoint {
+        if let pending = pendingDecorationPositions[item.id] { return pending }
+        let translation = decorationDragTranslations[item.id] ?? .zero
+        return CGPoint(
+            x: BoardCoordinateConverter.screen(item.x, length: canvasSize.width) + translation.width,
+            y: BoardCoordinateConverter.screen(item.y, length: canvasSize.height) + translation.height
+        )
+    }
+
+    @ViewBuilder
+    private func selectionOutline(isSelected: Bool) -> some View {
+        if isSelected {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(RuuutoPalette.accent, style: StrokeStyle(lineWidth: 2, dash: [5]))
+        }
+    }
+
+    private func penSelectionBounds(_ decoration: BoardPenDecoration, canvasSize: CGSize) -> CGRect {
+        let points = decoration.strokes.flatMap(\.points)
+        guard let minimumX = points.map(\.x).min(), let maximumX = points.map(\.x).max(),
+              let minimumY = points.map(\.y).min(), let maximumY = points.map(\.y).max() else {
+            return CGRect(x: 0, y: 0, width: 44, height: 44)
+        }
+        let offsetX = BoardCoordinateConverter.screen(decoration.x, length: canvasSize.width)
+        let offsetY = BoardCoordinateConverter.screen(decoration.y, length: canvasSize.height)
+        let raw = CGRect(
+            x: CGFloat(minimumX) * canvasSize.width + offsetX,
+            y: CGFloat(minimumY) * canvasSize.height + offsetY,
+            width: CGFloat(maximumX - minimumX) * canvasSize.width,
+            height: CGFloat(maximumY - minimumY) * canvasSize.height
+        ).insetBy(dx: -12, dy: -12)
+        let width = max(raw.width, 44)
+        let height = max(raw.height, 44)
+        return CGRect(x: raw.midX - width / 2, y: raw.midY - height / 2, width: width, height: height)
     }
 
     private var canvasDecorations: [BoardCanvasDecoration] {
@@ -546,6 +739,155 @@ private struct BoardCanvasSizePreferenceKey: PreferenceKey {
 
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
         value = nextValue()
+    }
+}
+
+private struct BoardSelectedDecorationBar: View {
+    let item: BoardDecorationItem
+    let canEdit: Bool
+    let canDelete: Bool
+    let edit: () -> Void
+    let delete: () -> Void
+    let close: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label(kindTitle, systemImage: kindImage)
+                    .font(RuuutoType.rounded(.subheadline).bold())
+                Spacer()
+                Button(action: close) {
+                    Image(systemName: "xmark.circle.fill")
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("boards.decorations.edit.close")
+            }
+
+            Text(item.isMovable ? "boards.decorations.edit.move_hint" : "boards.decorations.edit.pen_fixed")
+                .font(.caption)
+                .foregroundStyle(RuuutoPalette.muted)
+
+            HStack(spacing: 10) {
+                if isContentEditable {
+                    Button("boards.decorations.edit.change", action: edit)
+                        .buttonStyle(.borderedProminent)
+                        .tint(RuuutoPalette.accent)
+                        .disabled(!canEdit)
+                }
+
+                Button("boards.decorations.edit.delete", role: .destructive, action: delete)
+                    .buttonStyle(.bordered)
+                    .disabled(!canDelete)
+            }
+
+            if !canDelete {
+                Text("boards.decorations.edit.delete_creator_only")
+                    .font(.caption2)
+                    .foregroundStyle(RuuutoPalette.muted)
+            }
+        }
+        .padding(14)
+        .background(RuuutoPalette.soft.opacity(0.35))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var isContentEditable: Bool {
+        switch item {
+        case .text, .stamp: true
+        case .pen: false
+        }
+    }
+
+    private var kindTitle: LocalizedStringKey {
+        switch item {
+        case .text: "boards.decorations.edit.text"
+        case .stamp: "boards.decorations.edit.stamp"
+        case .pen: "boards.decorations.edit.pen"
+        }
+    }
+
+    private var kindImage: String {
+        switch item {
+        case .text: "character.cursor.ibeam"
+        case .stamp: "face.smiling"
+        case .pen: "pencil.tip"
+        }
+    }
+}
+
+private struct DecorationEditor: View {
+    let item: BoardDecorationItem
+    @Binding var text: String
+    @Binding var stamp: BoardStampKind
+    let isSaving: Bool
+    let errorMessage: String?
+    let cancel: () -> Void
+    let save: () -> Void
+
+    private var canSave: Bool {
+        switch item {
+        case .text:
+            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && text.count <= 200 && !isSaving
+        case .stamp:
+            !isSaving
+        case .pen:
+            false
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                switch item {
+                case .text:
+                    Section("boards.decorations.edit.text") {
+                        TextField("boards.decorations.text.placeholder", text: $text, axis: .vertical)
+                            .lineLimit(3...6)
+                            .disabled(isSaving)
+                        HStack {
+                            Spacer()
+                            Text(verbatim: "\(text.count)/200")
+                                .font(.caption)
+                                .foregroundStyle(text.count <= 200 ? RuuutoPalette.muted : .red)
+                        }
+                    }
+                case .stamp:
+                    Section("boards.decorations.edit.stamp") {
+                        Picker("boards.decorations.edit.stamp", selection: $stamp) {
+                            ForEach(BoardStampKind.allCases) { option in
+                                Text(LocalizedStringKey("boards.decorations.stamp.option.\(option.rawValue)"))
+                                    .tag(option)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                        .disabled(isSaving)
+                    }
+                case .pen:
+                    Text("boards.decorations.edit.pen_fixed")
+                }
+
+                if let errorMessage {
+                    Text(verbatim: errorMessage)
+                        .foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("boards.decorations.edit.title")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("boards.decorations.edit.cancel", action: cancel)
+                        .disabled(isSaving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSaving {
+                        ProgressView()
+                            .accessibilityLabel("boards.decorations.edit.saving")
+                    } else {
+                        Button("boards.decorations.edit.save", action: save)
+                            .disabled(!canSave)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -740,7 +1082,6 @@ private struct BoardTextDecorationView: View {
             .shadow(color: .black.opacity(0.28), radius: 6, y: 3)
             .rotationEffect(.degrees(decoration.rotation))
             .scaleEffect(decoration.scale)
-            .allowsHitTesting(false)
             .accessibilityLabel(Text(verbatim: decoration.text))
     }
 
@@ -808,7 +1149,6 @@ private struct BoardStampView: View {
             .font(.system(size: 48))
             .shadow(color: .black.opacity(0.24), radius: 5, y: 3)
             .fixedSize()
-            .allowsHitTesting(false)
             .accessibilityLabel(
                 Text(LocalizedStringKey("boards.decorations.stamp.option.\(stamp.rawValue)"))
             )

@@ -301,6 +301,153 @@
         "ja": { "stringUnit": { "state": "translated", "value": "スタンプを選ぶ" } }
       }
     },
+    "boards.decorations.edit.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "キャンセル" } }
+      }
+    },
+    "boards.decorations.edit.change": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Edit" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "変更" } }
+      }
+    },
+    "boards.decorations.edit.close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Close decoration controls" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "装飾の操作を閉じる" } }
+      }
+    },
+    "boards.decorations.edit.delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Delete" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "削除" } }
+      }
+    },
+    "boards.decorations.edit.delete_creator_only": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Only the person who added this can delete it." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "削除できるのは、この装飾を追加した人だけです。" } }
+      }
+    },
+    "boards.decorations.edit.delete_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Delete this decoration? This can’t be undone." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "この装飾を削除しますか？元に戻せません。" } }
+      }
+    },
+    "boards.decorations.edit.delete_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Delete decoration" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "装飾を削除" } }
+      }
+    },
+    "boards.decorations.edit.error_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t update the decoration" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "装飾を更新できませんでした" } }
+      }
+    },
+    "boards.decorations.edit.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t update the decoration. The saved version is shown." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "装飾を更新できませんでした。保存済みの状態を表示しています。" } }
+      }
+    },
+    "boards.decorations.edit.forbidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "You don’t have permission to change this decoration." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "この装飾を変更する権限がありません。" } }
+      }
+    },
+    "boards.decorations.edit.immutable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This decoration can’t be moved or changed." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "この装飾は移動や変更ができません。" } }
+      }
+    },
+    "boards.decorations.edit.locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Someone else is editing this decoration. Try again shortly." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ほかのメンバーが編集中です。少し待ってからお試しください。" } }
+      }
+    },
+    "boards.decorations.edit.lost_lock": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Editing was interrupted. The saved version is shown." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "編集が中断されました。保存済みの状態を表示しています。" } }
+      }
+    },
+    "boards.decorations.edit.move_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Drag it on the board to move it." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ボード上でドラッグすると移動できます。" } }
+      }
+    },
+    "boards.decorations.edit.pen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Line" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "線" } }
+      }
+    },
+    "boards.decorations.edit.pen_fixed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Saved lines can’t be moved or changed." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "保存した線は移動・変更できません。" } }
+      }
+    },
+    "boards.decorations.edit.save": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "保存" } }
+      }
+    },
+    "boards.decorations.edit.saving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Saving decoration" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "装飾を保存しています" } }
+      }
+    },
+    "boards.decorations.edit.stamp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stamp" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプ" } }
+      }
+    },
+    "boards.decorations.edit.text": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Text" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "文字" } }
+      }
+    },
+    "boards.decorations.edit.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Edit decoration" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "装飾を編集" } }
+      }
+    },
     "boards.groups.empty": {
       "extractionState": "manual",
       "localizations": {
