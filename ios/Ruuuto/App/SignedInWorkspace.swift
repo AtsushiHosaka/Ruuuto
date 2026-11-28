@@ -12,6 +12,8 @@ final class SignedInWorkspace {
 
     let groups: GroupDirectoryViewModel
     let currentBoard: CurrentBoardViewModel
+    let boardPhotos: BoardPhotoEditorViewModel
+    let boardPresence: BoardPresenceViewModel
     private let session: SessionModel
     var profile: ProfileViewModel { session.profile }
     private let userID: UUID
@@ -29,6 +31,86 @@ final class SignedInWorkspace {
         let client = session.client
         groups = GroupDirectoryViewModel(loadGroups: { try await GroupDirectoryAPI.list(client: client) })
         currentBoard = CurrentBoardViewModel(loadBoard: { try await CurrentBoardAPI.load(client: client, groupID: $0) })
+        boardPhotos = BoardPhotoEditorViewModel(
+            currentUserID: userID,
+            loadSnapshot: { try await BoardPhotoEditingAPI.loadSnapshot(client: client, boardID: $0) },
+            grabPhoto: { try await BoardPhotoEditingAPI.grab(client: client, photoID: $0) },
+            movePhoto: { photoID, x, y, rotation, scale in
+                try await BoardPhotoEditingAPI.move(
+                    client: client,
+                    photoID: photoID,
+                    x: x,
+                    y: y,
+                    rotation: rotation,
+                    scale: scale
+                )
+            },
+            releasePhoto: { await BoardPhotoEditingAPI.release(client: client, photoID: $0) },
+            addText: { decorationID, boardID, text, x, y in
+                try await BoardDecorationAPI.addText(
+                    client: client,
+                    decorationID: decorationID,
+                    boardID: boardID,
+                    text: text,
+                    x: x,
+                    y: y
+                )
+            },
+            addPen: { decorationID, boardID, points in
+                try await BoardDecorationAPI.addPen(
+                    client: client,
+                    decorationID: decorationID,
+                    boardID: boardID,
+                    points: points
+                )
+            },
+            addStamp: { decorationID, boardID, stamp, x, y in
+                try await BoardDecorationAPI.addStamp(
+                    client: client,
+                    decorationID: decorationID,
+                    boardID: boardID,
+                    stamp: stamp,
+                    x: x,
+                    y: y
+                )
+            },
+            grabDecoration: { try await BoardDecorationAPI.grab(client: client, decorationID: $0) },
+            moveDecoration: { decorationID, x, y, rotation, scale in
+                try await BoardDecorationAPI.move(
+                    client: client,
+                    decorationID: decorationID,
+                    x: x,
+                    y: y,
+                    rotation: rotation,
+                    scale: scale
+                )
+            },
+            releaseDecoration: { await BoardDecorationAPI.release(client: client, decorationID: $0) },
+            editTextDecoration: { id, text, color in
+                try await BoardDecorationAPI.editText(
+                    client: client,
+                    decorationID: id,
+                    text: text,
+                    color: color
+                )
+            },
+            editStampDecoration: { id, stamp in
+                try await BoardDecorationAPI.editStamp(client: client, decorationID: id, stamp: stamp)
+            },
+            deleteDecoration: { try await BoardDecorationAPI.delete(client: client, decorationID: $0) },
+            observeBoard: { BoardPhotoSyncAPI.events(client: client, boardID: $0) }
+        )
+        boardPresence = BoardPresenceViewModel(
+            currentUserID: userID,
+            connect: { boardID, displayName in
+                await BoardPresenceAPI.connect(
+                    client: client,
+                    boardID: boardID,
+                    userID: userID,
+                    displayName: displayName
+                )
+            }
+        )
     }
 
     func start() async {
