@@ -48,25 +48,27 @@ final class HistoryCalendarViewModel {
         let targets = monthsOfYear.filter { !isFuture($0) }
         for month in targets where months[month] == nil || months[month] == .failed { months[month] = .loading }
 
-        // 12か月を同時に取りに行き、届いた月から表示する
-        let loadMonth = self.loadMonth
-        await withTaskGroup(of: (BoardMonth, MonthState?).self) { group in
-            for month in targets {
-                group.addTask { @MainActor in
-                    do {
-                        let boards = try await loadMonth(month)
-                        return (month, .loaded(boards.sorted { $0.opensAt < $1.opensAt }))
-                    } catch is CancellationError {
-                        return (month, nil)
-                    } catch {
-                        return (month, .failed)
-                    }
-                }
-            }
-            for await (month, state) in group {
-                guard yearRequest == request, let state else { continue }
-                months[month] = state
-            }
+        // 12か月を同時に取りに行く（結果は月の順に反映する）
+        let tasks = targets.map { month in
+            Task { @MainActor [loadMonth] in (month, await Self.fetch(month, with: loadMonth)) }
+        }
+        for task in tasks {
+            let (month, state) = await task.value
+            guard yearRequest == request, let state else { continue }
+            months[month] = state
+        }
+    }
+
+    private static func fetch(
+        _ month: BoardMonth, with loadMonth: @MainActor (BoardMonth) async throws -> [BoardSummary]
+    ) async -> MonthState? {
+        do {
+            let boards = try await loadMonth(month)
+            return .loaded(boards.sorted { $0.opensAt < $1.opensAt })
+        } catch is CancellationError {
+            return nil
+        } catch {
+            return .failed
         }
     }
 
