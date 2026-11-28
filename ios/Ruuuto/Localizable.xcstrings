@@ -224,6 +224,13 @@
         "ja": { "stringUnit": { "state": "translated", "value": "メンバー" } }
       }
     },
+    "boards.presence.cursor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%@'s cursor" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "%@のカーソル" } }
+      }
+    },
     "boards.presence.moving_photo": {
       "extractionState": "manual",
       "localizations": {

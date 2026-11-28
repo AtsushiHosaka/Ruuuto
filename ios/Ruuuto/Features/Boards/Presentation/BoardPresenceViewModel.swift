@@ -14,12 +14,14 @@ final class BoardPresenceViewModel {
     private(set) var members: [BoardEditingMember] = []
     private(set) var state: BoardPresenceState = .idle
     private(set) var editingPhotoID: UUID?
+    private(set) var cursor: BoardCursorPosition?
 
     let currentUserID: UUID
     private let connect: @MainActor (UUID, String) async -> any BoardPresenceSession
     @ObservationIgnored private var session: (any BoardPresenceSession)?
     @ObservationIgnored private var synchronizationID: UUID?
     @ObservationIgnored private var updateTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingUpdate: PresenceUpdate?
 
     init(
         currentUserID: UUID,
@@ -34,17 +36,20 @@ final class BoardPresenceViewModel {
         self.synchronizationID = synchronizationID
         updateTask?.cancel()
         updateTask = nil
+        pendingUpdate = nil
         let previousSession = session
         session = nil
         await previousSession?.disconnect()
         guard self.synchronizationID == synchronizationID, !Task.isCancelled else { return }
 
         editingPhotoID = nil
+        cursor = nil
         members = [
             BoardEditingMember(
                 id: currentUserID,
                 displayName: displayName,
-                editingPhotoID: editingPhotoID
+                editingPhotoID: editingPhotoID,
+                cursor: cursor
             )
         ]
         state = .connecting
@@ -55,7 +60,7 @@ final class BoardPresenceViewModel {
             return
         }
         self.session = session
-        await session.setEditingPhotoID(editingPhotoID)
+        await session.update(editingPhotoID: editingPhotoID, cursor: cursor)
 
         await withTaskCancellationHandler {
             for await event in session.events {
@@ -79,6 +84,7 @@ final class BoardPresenceViewModel {
         if self.synchronizationID == synchronizationID {
             self.session = nil
             editingPhotoID = nil
+            cursor = nil
             members = []
             state = .idle
         }
@@ -87,21 +93,47 @@ final class BoardPresenceViewModel {
     func setEditingPhotoID(_ photoID: UUID?) {
         guard editingPhotoID != photoID else { return }
         editingPhotoID = photoID
+        updateCurrentMember()
+        enqueuePresenceUpdate()
+    }
+
+    func setCursor(_ cursor: BoardCursorPosition?) {
+        guard self.cursor != cursor else { return }
+        self.cursor = cursor
+        updateCurrentMember()
+        enqueuePresenceUpdate()
+    }
+
+    private func updateCurrentMember() {
         if let index = members.firstIndex(where: { $0.id == currentUserID }) {
             let current = members[index]
             members[index] = BoardEditingMember(
                 id: current.id,
                 displayName: current.displayName,
-                editingPhotoID: photoID
+                editingPhotoID: editingPhotoID,
+                cursor: cursor
             )
         }
+    }
 
+    private func enqueuePresenceUpdate() {
         guard let session else { return }
-        let previousUpdate = updateTask
+        pendingUpdate = PresenceUpdate(editingPhotoID: editingPhotoID, cursor: cursor)
+        guard updateTask == nil else { return }
         updateTask = Task {
-            await previousUpdate?.value
-            guard !Task.isCancelled else { return }
-            await session.setEditingPhotoID(photoID)
+            while !Task.isCancelled, let update = pendingUpdate {
+                pendingUpdate = nil
+                await session.update(editingPhotoID: update.editingPhotoID, cursor: update.cursor)
+                if pendingUpdate != nil {
+                    try? await Task.sleep(for: .milliseconds(50))
+                }
+            }
+            updateTask = nil
         }
     }
+}
+
+private struct PresenceUpdate: Equatable, Sendable {
+    let editingPhotoID: UUID?
+    let cursor: BoardCursorPosition?
 }

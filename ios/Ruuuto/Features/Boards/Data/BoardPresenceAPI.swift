@@ -28,6 +28,7 @@ private actor RealtimeBoardPresenceSession: BoardPresenceSession {
     private let displayName: String
     private let continuation: AsyncStream<BoardPresenceEvent>.Continuation
     private var editingPhotoID: UUID?
+    private var cursor: BoardCursorPosition?
     private var remoteStatesByRef: [String: PresenceStateDTO] = [:]
     private var channel: RealtimeChannelV2?
     private var producer: Task<Void, Never>?
@@ -53,8 +54,9 @@ private actor RealtimeBoardPresenceSession: BoardPresenceSession {
         }
     }
 
-    func setEditingPhotoID(_ photoID: UUID?) async {
-        editingPhotoID = photoID
+    func update(editingPhotoID: UUID?, cursor: BoardCursorPosition?) async {
+        self.editingPhotoID = editingPhotoID
+        self.cursor = cursor
         emitMembers()
         guard let channel, channel.status == .subscribed else { return }
         try? await channel.track(localState)
@@ -170,14 +172,14 @@ private actor RealtimeBoardPresenceSession: BoardPresenceSession {
             userID: BoardEditingMember(
                 id: userID,
                 displayName: displayName,
-                editingPhotoID: editingPhotoID
+                editingPhotoID: editingPhotoID,
+                cursor: cursor
             )
         ]
 
         for state in remoteStatesByRef.values {
             let member = state.member
-            if let existing = membersByID[member.id], existing.editingPhotoID != nil,
-               member.editingPhotoID == nil {
+            if let existing = membersByID[member.id], presenceScore(existing) > presenceScore(member) {
                 continue
             }
             membersByID[member.id] = member
@@ -193,7 +195,17 @@ private actor RealtimeBoardPresenceSession: BoardPresenceSession {
     }
 
     private var localState: PresenceStateDTO {
-        PresenceStateDTO(userID: userID, displayName: displayName, editingPhotoID: editingPhotoID)
+        PresenceStateDTO(
+            userID: userID,
+            displayName: displayName,
+            editingPhotoID: editingPhotoID,
+            cursorX: cursor?.x,
+            cursorY: cursor?.y
+        )
+    }
+
+    private func presenceScore(_ member: BoardEditingMember) -> Int {
+        (member.editingPhotoID == nil ? 0 : 2) + (member.cursor == nil ? 0 : 1)
     }
 
     private var liveTopic: String {
@@ -205,14 +217,28 @@ private struct PresenceStateDTO: Codable, Sendable {
     let userID: UUID
     let displayName: String
     let editingPhotoID: UUID?
+    let cursorX: Double?
+    let cursorY: Double?
 
     private enum CodingKeys: String, CodingKey {
         case userID = "user_id"
         case displayName = "display_name"
         case editingPhotoID = "editing_photo_id"
+        case cursorX = "cursor_x"
+        case cursorY = "cursor_y"
     }
 
     var member: BoardEditingMember {
-        BoardEditingMember(id: userID, displayName: displayName, editingPhotoID: editingPhotoID)
+        let cursor: BoardCursorPosition? = if let cursorX, let cursorY {
+            BoardCursorPosition(x: cursorX, y: cursorY)
+        } else {
+            nil
+        }
+        return BoardEditingMember(
+            id: userID,
+            displayName: displayName,
+            editingPhotoID: editingPhotoID,
+            cursor: cursor
+        )
     }
 }

@@ -203,9 +203,21 @@ private struct BoardPhotoCanvas: View {
                     .allowsHitTesting(editor.isEditable && photo.layer > 0)
                     .accessibilityHint(editor.isEditable ? Text("boards.photos.accessibility.move_hint") : Text(verbatim: ""))
                 }
+
+                ForEach(remoteCursorMembers) { member in
+                    if let cursor = member.cursor {
+                        BoardParticipantCursor(displayName: member.displayName)
+                            .offset(
+                                x: CGFloat(cursor.x) * canvasSize.width,
+                                y: CGFloat(cursor.y) * canvasSize.height
+                            )
+                            .animation(.linear(duration: 0.08), value: cursor)
+                    }
+                }
             }
             .clipped()
             .contentShape(Rectangle())
+            .coordinateSpace(name: BoardCanvasCoordinateSpace.name)
         }
         .background(RuuutoPalette.ink)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
@@ -218,16 +230,23 @@ private struct BoardPhotoCanvas: View {
     }
 
     private func dragGesture(for photo: BoardPhoto, cardSize: CGSize, canvasSize: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 2, coordinateSpace: .local)
+        DragGesture(minimumDistance: 2, coordinateSpace: .named(BoardCanvasCoordinateSpace.name))
             .onChanged { value in
                 if dragTranslations[photo.id] == nil {
                     guard editor.beginMoving(photo.id) else { return }
                     presence.setEditingPhotoID(photo.id)
                 }
                 dragTranslations[photo.id] = value.translation
+                presence.setCursor(
+                    BoardCursorPosition(
+                        x: Double(value.location.x / max(canvasSize.width, 1)),
+                        y: Double(value.location.y / max(canvasSize.height, 1))
+                    )
+                )
             }
             .onEnded { value in
                 guard dragTranslations.removeValue(forKey: photo.id) != nil else { return }
+                presence.setCursor(nil)
                 let origin = constrainedOrigin(
                     photo: photo,
                     translation: value.translation,
@@ -241,6 +260,10 @@ private struct BoardPhotoCanvas: View {
                     presence.setEditingPhotoID(nil)
                 }
             }
+    }
+
+    private var remoteCursorMembers: [BoardEditingMember] {
+        presence.members.filter { $0.id != presence.currentUserID && $0.cursor != nil }
     }
 
     private func cardSize(for photo: BoardPhoto) -> CGSize {
@@ -260,6 +283,38 @@ private struct BoardPhotoCanvas: View {
         return CGPoint(
             x: min(max(CGFloat(photo.x) + translation.width, 0), maximumX),
             y: min(max(CGFloat(photo.y) + translation.height, 0), maximumY)
+        )
+    }
+}
+
+private enum BoardCanvasCoordinateSpace {
+    static let name = "board-photo-canvas"
+}
+
+private struct BoardParticipantCursor: View {
+    let displayName: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Image(systemName: "cursorarrow")
+                .font(.title3.weight(.bold))
+                .foregroundStyle(RuuutoPalette.accent)
+                .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
+
+            Text(verbatim: displayName)
+                .font(RuuutoType.rounded(.caption2).bold())
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(RuuutoPalette.accent)
+                .clipShape(Capsule())
+        }
+        .fixedSize()
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            Text(verbatim: String(format: String(localized: "boards.presence.cursor"), displayName))
         )
     }
 }
