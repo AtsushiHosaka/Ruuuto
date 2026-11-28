@@ -12,6 +12,7 @@ enum BoardPresenceState: Equatable, Sendable {
 @Observable
 final class BoardPresenceViewModel {
     private(set) var members: [BoardEditingMember] = []
+    private(set) var remoteCursors: [BoardRemoteCursor] = []
     private(set) var state: BoardPresenceState = .idle
     private(set) var editingPhotoID: UUID?
     private(set) var cursor: BoardCursorPosition?
@@ -22,6 +23,7 @@ final class BoardPresenceViewModel {
     @ObservationIgnored private var synchronizationID: UUID?
     @ObservationIgnored private var updateTask: Task<Void, Never>?
     @ObservationIgnored private var pendingUpdate: PresenceUpdate?
+    @ObservationIgnored private var cursorPositionsByUserID: [UUID: BoardCursorPosition] = [:]
 
     init(
         currentUserID: UUID,
@@ -44,12 +46,13 @@ final class BoardPresenceViewModel {
 
         editingPhotoID = nil
         cursor = nil
+        cursorPositionsByUserID = [:]
+        remoteCursors = []
         members = [
             BoardEditingMember(
                 id: currentUserID,
                 displayName: displayName,
-                editingPhotoID: editingPhotoID,
-                cursor: cursor
+                editingPhotoID: editingPhotoID
             )
         ]
         state = .connecting
@@ -67,13 +70,23 @@ final class BoardPresenceViewModel {
                 guard self.synchronizationID == synchronizationID, !Task.isCancelled else { break }
                 switch event {
                 case .connecting:
+                    clearRemoteCursors()
                     state = state == .connected ? .reconnecting : .connecting
                 case .connected:
                     state = .connected
                 case .connectionFailed:
+                    clearRemoteCursors()
                     state = state == .connected ? .reconnecting : .connecting
                 case .membersChanged(let members):
                     self.members = members
+                    let memberIDs = Set(members.map(\.id))
+                    cursorPositionsByUserID = cursorPositionsByUserID.filter { memberIDs.contains($0.key) }
+                    rebuildRemoteCursors()
+                case .cursorChanged(let userID, let position):
+                    cursorPositionsByUserID[userID] = position
+                    rebuildRemoteCursors()
+                case .remoteCursorsCleared:
+                    clearRemoteCursors()
                 }
             }
         } onCancel: {
@@ -85,6 +98,8 @@ final class BoardPresenceViewModel {
             self.session = nil
             editingPhotoID = nil
             cursor = nil
+            cursorPositionsByUserID = [:]
+            remoteCursors = []
             members = []
             state = .idle
         }
@@ -100,7 +115,6 @@ final class BoardPresenceViewModel {
     func setCursor(_ cursor: BoardCursorPosition?) {
         guard self.cursor != cursor else { return }
         self.cursor = cursor
-        updateCurrentMember()
         enqueuePresenceUpdate()
     }
 
@@ -110,8 +124,7 @@ final class BoardPresenceViewModel {
             members[index] = BoardEditingMember(
                 id: current.id,
                 displayName: current.displayName,
-                editingPhotoID: editingPhotoID,
-                cursor: cursor
+                editingPhotoID: editingPhotoID
             )
         }
     }
@@ -130,6 +143,18 @@ final class BoardPresenceViewModel {
             }
             updateTask = nil
         }
+    }
+
+    private func rebuildRemoteCursors() {
+        remoteCursors = members.compactMap { member in
+            guard member.id != currentUserID, let position = cursorPositionsByUserID[member.id] else { return nil }
+            return BoardRemoteCursor(id: member.id, displayName: member.displayName, position: position)
+        }
+    }
+
+    private func clearRemoteCursors() {
+        cursorPositionsByUserID = [:]
+        remoteCursors = []
     }
 }
 

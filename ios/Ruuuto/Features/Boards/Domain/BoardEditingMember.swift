@@ -14,19 +14,12 @@ struct BoardEditingMember: Identifiable, Equatable, Sendable {
     let id: UUID
     let displayName: String
     let editingPhotoID: UUID?
-    let cursor: BoardCursorPosition?
+}
 
-    init(
-        id: UUID,
-        displayName: String,
-        editingPhotoID: UUID?,
-        cursor: BoardCursorPosition? = nil
-    ) {
-        self.id = id
-        self.displayName = displayName
-        self.editingPhotoID = editingPhotoID
-        self.cursor = cursor
-    }
+struct BoardRemoteCursor: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let displayName: String
+    let position: BoardCursorPosition
 }
 
 enum BoardPresenceEvent: Equatable, Sendable {
@@ -34,6 +27,8 @@ enum BoardPresenceEvent: Equatable, Sendable {
     case connected
     case connectionFailed
     case membersChanged([BoardEditingMember])
+    case cursorChanged(userID: UUID, position: BoardCursorPosition?)
+    case remoteCursorsCleared
 }
 
 protocol BoardPresenceSession: Sendable {

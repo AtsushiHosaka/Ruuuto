@@ -69,6 +69,7 @@ private struct BoardPhotoEditorView: View {
     let displayName: String
     let showGroups: () -> Void
     @State private var isTextComposerPresented = false
+    @State private var isPenEnabled = false
     @State private var textDraft = ""
     @State private var canvasSize = CGSize(width: 320, height: 500)
 
@@ -117,10 +118,21 @@ private struct BoardPhotoEditorView: View {
 
                 if editor.state == .loaded {
                     BoardDecorationToolbar(
-                        canAddText: editor.isEditable && !editor.isSavingText,
+                        canDecorate: editor.isEditable && !editor.isSavingText && !editor.isSavingPen,
+                        isPenEnabled: isPenEnabled,
                         addText: {
+                            isPenEnabled = false
+                            editor.discardPendingPenStroke()
                             editor.dismissTextError()
                             isTextComposerPresented = true
+                        },
+                        togglePen: {
+                            if isPenEnabled {
+                                isPenEnabled = false
+                                editor.discardPendingPenStroke()
+                            } else {
+                                isPenEnabled = true
+                            }
                         }
                     )
                 }
@@ -130,6 +142,8 @@ private struct BoardPhotoEditorView: View {
         }
         .background(RuuutoPalette.page.ignoresSafeArea())
         .task(id: board.id) {
+            isPenEnabled = false
+            editor.discardPendingPenStroke()
             await editor.synchronize(boardID: board.id)
         }
         .task(id: PresenceTaskID(boardID: board.id, displayName: displayName)) {
@@ -166,6 +180,24 @@ private struct BoardPhotoEditorView: View {
             .presentationDetents([.medium])
             .interactiveDismissDisabled(editor.isSavingText)
         }
+        .alert(
+            Text("boards.decorations.pen.save_error_title"),
+            isPresented: Binding(
+                get: { editor.penErrorMessage != nil },
+                set: { if !$0 { editor.discardPendingPenStroke() } }
+            )
+        ) {
+            Button("boards.decorations.pen.retry") {
+                Task { _ = await editor.retryPendingPenStroke() }
+            }
+            Button("boards.decorations.pen.discard", role: .destructive) {
+                editor.discardPendingPenStroke()
+            }
+        } message: {
+            if let message = editor.penErrorMessage {
+                Text(verbatim: message)
+            }
+        }
     }
 
     private func submitTextDecoration() {
@@ -174,7 +206,11 @@ private struct BoardPhotoEditorView: View {
             y: max(12, (canvasSize.height - 44) / 2)
         )
         Task {
-            if await editor.addText(textDraft, x: Double(origin.x), y: Double(origin.y)) {
+            if await editor.addText(
+                textDraft,
+                x: BoardCoordinateConverter.normalized(origin.x, length: canvasSize.width),
+                y: BoardCoordinateConverter.normalized(origin.y, length: canvasSize.height)
+            ) {
                 textDraft = ""
                 isTextComposerPresented = false
             }
@@ -199,7 +235,7 @@ private struct BoardPhotoEditorView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 360)
         case .loaded:
-            BoardPhotoCanvas(editor: editor, presence: presence)
+            BoardPhotoCanvas(editor: editor, presence: presence, isPenEnabled: isPenEnabled)
                 .frame(height: 500)
                 .background {
                     GeometryReader { proxy in
@@ -217,8 +253,10 @@ private struct BoardPhotoEditorView: View {
 private struct BoardPhotoCanvas: View {
     @Bindable var editor: BoardPhotoEditorViewModel
     @Bindable var presence: BoardPresenceViewModel
+    let isPenEnabled: Bool
     @State private var dragTranslations: [UUID: CGSize] = [:]
     @State private var pendingOrigins: [UUID: CGPoint] = [:]
+    @State private var draftPenPoints: [BoardPenPoint] = []
 
     var body: some View {
         GeometryReader { proxy in
@@ -226,7 +264,7 @@ private struct BoardPhotoCanvas: View {
             ZStack(alignment: .topLeading) {
                 BoardDotGrid()
 
-                if editor.photos.isEmpty, editor.textDecorations.isEmpty {
+                if editor.photos.isEmpty, editor.textDecorations.isEmpty, editor.penDecorations.isEmpty {
                     Text("boards.photos.empty")
                         .foregroundStyle(RuuutoPalette.soft)
                         .multilineTextAlignment(.center)
@@ -257,21 +295,51 @@ private struct BoardPhotoCanvas: View {
                     .accessibilityHint(editor.isEditable ? Text("boards.photos.accessibility.move_hint") : Text(verbatim: ""))
                 }
 
-                ForEach(editor.textDecorations) { decoration in
-                    BoardTextDecorationView(decoration: decoration)
-                        .offset(x: CGFloat(decoration.x), y: CGFloat(decoration.y))
-                }
-
-                ForEach(remoteCursorMembers) { member in
-                    if let cursor = member.cursor {
-                        BoardParticipantCursor(displayName: member.displayName)
+                ForEach(canvasDecorations) { decoration in
+                    switch decoration {
+                    case .text(let text):
+                        BoardTextDecorationView(decoration: text)
                             .offset(
-                                x: CGFloat(cursor.x) * canvasSize.width,
-                                y: CGFloat(cursor.y) * canvasSize.height
+                                x: BoardCoordinateConverter.screen(text.x, length: canvasSize.width),
+                                y: BoardCoordinateConverter.screen(text.y, length: canvasSize.height)
                             )
-                            .animation(.linear(duration: 0.08), value: cursor)
+                    case .pen(let pen):
+                        BoardPenDecorationView(decoration: pen, canvasSize: canvasSize)
                     }
                 }
+
+                if let pendingPenStroke = editor.pendingPenStroke {
+                    BoardPenStrokeView(
+                        stroke: BoardPenStroke(points: pendingPenStroke, colorHex: "#6E9BF2", width: 4),
+                        canvasSize: canvasSize
+                    )
+                    .opacity(editor.isSavingPen ? 0.72 : 1)
+                }
+
+                if draftPenPoints.count >= 2 {
+                    BoardPenStrokeView(
+                        stroke: BoardPenStroke(points: draftPenPoints, colorHex: "#6E9BF2", width: 4),
+                        canvasSize: canvasSize
+                    )
+                }
+
+                ForEach(presence.remoteCursors) { cursor in
+                    BoardParticipantCursor(displayName: cursor.displayName)
+                        .offset(
+                            x: CGFloat(cursor.position.x) * canvasSize.width,
+                            y: CGFloat(cursor.position.y) * canvasSize.height
+                        )
+                        .animation(.linear(duration: 0.08), value: cursor.position)
+                }
+
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(penGesture(canvasSize: canvasSize))
+                    .allowsHitTesting(
+                        isPenEnabled && editor.isEditable && !editor.isSavingPen
+                            && editor.pendingPenStroke == nil
+                    )
+                    .accessibilityLabel("boards.decorations.pen.canvas")
             }
             .clipped()
             .contentShape(Rectangle())
@@ -285,6 +353,16 @@ private struct BoardPhotoCanvas: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("boards.photos.accessibility.canvas")
+        .onChange(of: isPenEnabled) { _, enabled in
+            if !enabled {
+                draftPenPoints = []
+                presence.setCursor(nil)
+            }
+        }
+        .onDisappear {
+            draftPenPoints = []
+            presence.setCursor(nil)
+        }
     }
 
     private func dragGesture(for photo: BoardPhoto, cardSize: CGSize, canvasSize: CGSize) -> some Gesture {
@@ -313,15 +391,45 @@ private struct BoardPhotoCanvas: View {
                 )
                 pendingOrigins[photo.id] = origin
                 Task {
-                    await editor.commitMove(photoID: photo.id, x: Double(origin.x), y: Double(origin.y))
+                    await editor.commitMove(
+                        photoID: photo.id,
+                        x: BoardCoordinateConverter.normalized(origin.x, length: canvasSize.width),
+                        y: BoardCoordinateConverter.normalized(origin.y, length: canvasSize.height)
+                    )
                     pendingOrigins[photo.id] = nil
                     presence.setEditingPhotoID(nil)
                 }
             }
     }
 
-    private var remoteCursorMembers: [BoardEditingMember] {
-        presence.members.filter { $0.id != presence.currentUserID && $0.cursor != nil }
+    private var canvasDecorations: [BoardCanvasDecoration] {
+        (
+            editor.textDecorations.map(BoardCanvasDecoration.text)
+                + editor.penDecorations.map(BoardCanvasDecoration.pen)
+        ).sorted { ($0.layer, $0.zIndex, $0.id.uuidString) < ($1.layer, $1.zIndex, $1.id.uuidString) }
+    }
+
+    private func penGesture(canvasSize: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(BoardCanvasCoordinateSpace.name))
+            .onChanged { value in
+                let point = BoardPenPoint(
+                    x: BoardCoordinateConverter.normalized(value.location.x, length: canvasSize.width),
+                    y: BoardCoordinateConverter.normalized(value.location.y, length: canvasSize.height)
+                )
+                if let last = draftPenPoints.last {
+                    let distance = hypot(point.x - last.x, point.y - last.y)
+                    guard distance >= 0.003 else { return }
+                }
+                draftPenPoints.append(point)
+                presence.setCursor(BoardCursorPosition(x: point.x, y: point.y))
+            }
+            .onEnded { _ in
+                presence.setCursor(nil)
+                let points = draftPenPoints
+                draftPenPoints = []
+                guard points.count >= 2 else { return }
+                Task { _ = await editor.savePenStroke(points) }
+            }
     }
 
     private func cardSize(for photo: BoardPhoto) -> CGSize {
@@ -338,9 +446,11 @@ private struct BoardPhotoCanvas: View {
     ) -> CGPoint {
         let maximumX = max(0, canvasSize.width - cardSize.width)
         let maximumY = max(0, canvasSize.height - cardSize.height)
+        let storedX = BoardCoordinateConverter.screen(photo.x, length: canvasSize.width)
+        let storedY = BoardCoordinateConverter.screen(photo.y, length: canvasSize.height)
         return CGPoint(
-            x: min(max(CGFloat(photo.x) + translation.width, 0), maximumX),
-            y: min(max(CGFloat(photo.y) + translation.height, 0), maximumY)
+            x: min(max(storedX + translation.width, 0), maximumX),
+            y: min(max(storedY + translation.height, 0), maximumY)
         )
     }
 }
@@ -354,31 +464,61 @@ private struct BoardCanvasSizePreferenceKey: PreferenceKey {
 }
 
 private struct BoardDecorationToolbar: View {
-    let canAddText: Bool
+    let canDecorate: Bool
+    let isPenEnabled: Bool
     let addText: () -> Void
+    let togglePen: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            Button(action: addText) {
-                Text(verbatim: "あ")
-                    .font(RuuutoType.hand(.title3))
-                    .frame(width: 42, height: 42)
-                    .background(RuuutoPalette.soft.opacity(0.55))
-                    .clipShape(Circle())
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                decorationButton(
+                    title: "boards.decorations.text.add",
+                    systemImage: "character.cursor.ibeam",
+                    isSelected: false,
+                    action: addText
+                )
+
+                decorationButton(
+                    title: isPenEnabled
+                        ? "boards.decorations.pen.finish"
+                        : "boards.decorations.pen.add",
+                    systemImage: "pencil.tip",
+                    isSelected: isPenEnabled,
+                    action: togglePen
+                )
+
+                Spacer()
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(RuuutoPalette.accent)
-            .disabled(!canAddText)
-            .opacity(canAddText ? 1 : 0.45)
-            .accessibilityLabel("boards.decorations.text.add")
 
-            Text("boards.decorations.text.add")
-                .font(.caption)
-                .foregroundStyle(RuuutoPalette.muted)
-
-            Spacer()
+            if isPenEnabled {
+                Text("boards.decorations.pen.instruction")
+                    .font(.caption)
+                    .foregroundStyle(RuuutoPalette.muted)
+            }
         }
         .padding(.horizontal, 4)
+    }
+
+    private func decorationButton(
+        title: LocalizedStringKey,
+        systemImage: String,
+        isSelected: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .font(RuuutoType.rounded(.caption).bold())
+                .padding(.horizontal, 12)
+                .frame(height: 42)
+                .background(isSelected ? RuuutoPalette.accent : RuuutoPalette.soft.opacity(0.55))
+                .foregroundStyle(isSelected ? Color.white : RuuutoPalette.accent)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .disabled(!canDecorate)
+        .opacity(canDecorate ? 1 : 0.45)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -459,6 +599,97 @@ private struct BoardTextDecorationView: View {
 
     private var decorationColor: Color {
         let hex = decoration.colorHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        guard hex.count == 6, let value = UInt64(hex, radix: 16) else { return RuuutoPalette.accent }
+        return Color(
+            red: Double((value >> 16) & 0xff) / 255,
+            green: Double((value >> 8) & 0xff) / 255,
+            blue: Double(value & 0xff) / 255
+        )
+    }
+}
+
+private enum BoardCanvasDecoration: Identifiable {
+    case text(BoardTextDecoration)
+    case pen(BoardPenDecoration)
+
+    var id: UUID {
+        switch self {
+        case .text(let decoration): decoration.id
+        case .pen(let decoration): decoration.id
+        }
+    }
+
+    var layer: Int {
+        switch self {
+        case .text(let decoration): decoration.layer
+        case .pen(let decoration): decoration.layer
+        }
+    }
+
+    var zIndex: Int {
+        switch self {
+        case .text(let decoration): decoration.zIndex
+        case .pen(let decoration): decoration.zIndex
+        }
+    }
+}
+
+private struct BoardPenDecorationView: View {
+    let decoration: BoardPenDecoration
+    let canvasSize: CGSize
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(Array(decoration.strokes.enumerated()), id: \.offset) { _, stroke in
+                BoardPenStrokeView(stroke: stroke, canvasSize: canvasSize)
+            }
+        }
+        .frame(width: canvasSize.width, height: canvasSize.height, alignment: .topLeading)
+        .rotationEffect(.degrees(decoration.rotation))
+        .scaleEffect(decoration.scale)
+        .offset(
+            x: BoardCoordinateConverter.screen(decoration.x, length: canvasSize.width),
+            y: BoardCoordinateConverter.screen(decoration.y, length: canvasSize.height)
+        )
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct BoardPenStrokeView: View {
+    let stroke: BoardPenStroke
+    let canvasSize: CGSize
+
+    var body: some View {
+        Path { path in
+            guard let first = stroke.points.first else { return }
+            path.move(to: screenPoint(first))
+            for point in stroke.points.dropFirst() {
+                path.addLine(to: screenPoint(point))
+            }
+        }
+        .stroke(
+            strokeColor,
+            style: StrokeStyle(
+                lineWidth: CGFloat(stroke.width),
+                lineCap: .round,
+                lineJoin: .round
+            )
+        )
+        .frame(width: canvasSize.width, height: canvasSize.height)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func screenPoint(_ point: BoardPenPoint) -> CGPoint {
+        CGPoint(
+            x: CGFloat(point.x) * canvasSize.width,
+            y: CGFloat(point.y) * canvasSize.height
+        )
+    }
+
+    private var strokeColor: Color {
+        let hex = stroke.colorHex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
         guard hex.count == 6, let value = UInt64(hex, radix: 16) else { return RuuutoPalette.accent }
         return Color(
             red: Double((value >> 16) & 0xff) / 255,

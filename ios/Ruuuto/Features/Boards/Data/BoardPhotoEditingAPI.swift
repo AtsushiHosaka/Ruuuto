@@ -23,7 +23,8 @@ enum BoardPhotoEditingAPI {
                 isOpen: snapshot.board.status == "open",
                 closesAt: snapshot.board.closesAt.value,
                 photos: photos,
-                textDecorations: snapshot.decorations.compactMap(\.textModel)
+                textDecorations: snapshot.decorations.compactMap(\.textModel),
+                penDecorations: snapshot.decorations.compactMap(\.penModel)
             )
         } catch let error as PostgrestError {
             throw mapped(error) ?? error

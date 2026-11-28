@@ -83,6 +83,7 @@ enum BoardPhotoSyncEvent: Equatable, Sendable {
     case photoSaved(BoardPhotoSavedChange)
     case photoWithdrawn(boardID: UUID, photoID: UUID)
     case decorationSaved(BoardTextDecoration)
+    case penDecorationSaved(BoardPenDecoration)
     case decorationDeleted(boardID: UUID, decorationID: UUID)
     case snapshotRequired
 }
@@ -93,6 +94,7 @@ struct BoardSnapshot: Equatable, Sendable {
     let closesAt: Date
     let photos: [BoardPhoto]
     let textDecorations: [BoardTextDecoration]
+    let penDecorations: [BoardPenDecoration]
 }
 
 enum BoardPhotoEditingError: Error, Equatable, Sendable {

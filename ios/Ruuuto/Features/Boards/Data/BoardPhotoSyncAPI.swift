@@ -63,6 +63,8 @@ enum BoardPhotoSyncAPI {
                                         let decoration: BoardDecorationDTO = try decodePayload(from: message)
                                         if let textDecoration = decoration.textModel {
                                             continuation.yield(.decorationSaved(textDecoration))
+                                        } else if let penDecoration = decoration.penModel {
+                                            continuation.yield(.penDecorationSaved(penDecoration))
                                         }
                                     } catch {
                                         continuation.yield(.snapshotRequired)

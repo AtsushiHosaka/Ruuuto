@@ -126,6 +126,69 @@
         "ja": { "stringUnit": { "state": "translated", "value": "文字を置く" } }
       }
     },
+    "boards.decorations.pen.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Draw" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ペンで描く" } }
+      }
+    },
+    "boards.decorations.pen.add_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t save the line. Try again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "線を保存できませんでした。もう一度お試しください。" } }
+      }
+    },
+    "boards.decorations.pen.canvas": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Drawing area" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "描画エリア" } }
+      }
+    },
+    "boards.decorations.pen.discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Discard" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "取り消す" } }
+      }
+    },
+    "boards.decorations.pen.finish": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Finish drawing" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "描画を終了" } }
+      }
+    },
+    "boards.decorations.pen.instruction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Drag anywhere on the board to draw a line." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ボード上をなぞって線を描けます。" } }
+      }
+    },
+    "boards.decorations.pen.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The line data is invalid." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "線のデータが正しくありません。" } }
+      }
+    },
+    "boards.decorations.pen.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Try again" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "もう一度試す" } }
+      }
+    },
+    "boards.decorations.pen.save_error_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t save the line" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "線を保存できませんでした" } }
+      }
+    },
     "boards.groups.empty": {
       "extractionState": "manual",
       "localizations": {
