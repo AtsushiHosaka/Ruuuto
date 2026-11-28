@@ -24,12 +24,16 @@ final class BoardPhotoEditorViewModel {
     private(set) var textDecorations: [BoardTextDecoration] = []
     private(set) var penDecorations: [BoardPenDecoration] = []
     private(set) var pendingPenStroke: [BoardPenPoint]?
+    private(set) var stampDecorations: [BoardStampDecoration] = []
+    private(set) var pendingStampPlacement: BoardStampPlacement?
     private(set) var activePhotoID: UUID?
     private(set) var moveErrorMessage: String?
     private(set) var textErrorMessage: String?
     private(set) var isSavingText = false
     private(set) var penErrorMessage: String?
     private(set) var isSavingPen = false
+    private(set) var stampErrorMessage: String?
+    private(set) var isSavingStamp = false
     private(set) var isEditable = false
     private(set) var syncState: BoardPhotoSyncState = .idle
 
@@ -40,11 +44,19 @@ final class BoardPhotoEditorViewModel {
     private let releasePhoto: @MainActor (UUID) async -> Void
     private let createTextDecoration: @MainActor (UUID, UUID, String, Double, Double) async throws -> BoardTextDecoration
     private let createPenDecoration: @MainActor (UUID, UUID, [BoardPenPoint]) async throws -> BoardPenDecoration
+    private let createStampDecoration: @MainActor (
+        UUID,
+        UUID,
+        BoardStampKind,
+        Double,
+        Double
+    ) async throws -> BoardStampDecoration
     private let observeBoard: @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     @ObservationIgnored private var loadRequestID: UUID?
     @ObservationIgnored private var grabTasks: [UUID: Task<Bool, Never>] = [:]
     @ObservationIgnored private var pendingTextAddition: PendingTextAddition?
     @ObservationIgnored private var pendingPenAddition: PendingPenAddition?
+    @ObservationIgnored private var pendingStampAddition: PendingStampAddition?
 
     init(
         currentUserID: UUID,
@@ -54,6 +66,13 @@ final class BoardPhotoEditorViewModel {
         releasePhoto: @escaping @MainActor (UUID) async -> Void,
         addText: @escaping @MainActor (UUID, UUID, String, Double, Double) async throws -> BoardTextDecoration,
         addPen: @escaping @MainActor (UUID, UUID, [BoardPenPoint]) async throws -> BoardPenDecoration,
+        addStamp: @escaping @MainActor (
+            UUID,
+            UUID,
+            BoardStampKind,
+            Double,
+            Double
+        ) async throws -> BoardStampDecoration,
         observeBoard: @escaping @MainActor (UUID) -> AsyncStream<BoardPhotoSyncEvent>
     ) {
         self.currentUserID = currentUserID
@@ -63,6 +82,7 @@ final class BoardPhotoEditorViewModel {
         self.releasePhoto = releasePhoto
         createTextDecoration = addText
         createPenDecoration = addPen
+        createStampDecoration = addStamp
         self.observeBoard = observeBoard
     }
 
@@ -79,13 +99,17 @@ final class BoardPhotoEditorViewModel {
         moveErrorMessage = nil
         textErrorMessage = nil
         penErrorMessage = nil
+        stampErrorMessage = nil
         if changedBoard {
             photos = []
             textDecorations = []
             penDecorations = []
             pendingPenStroke = nil
+            stampDecorations = []
+            pendingStampPlacement = nil
             pendingTextAddition = nil
             pendingPenAddition = nil
+            pendingStampAddition = nil
             isEditable = false
         }
 
@@ -110,6 +134,8 @@ final class BoardPhotoEditorViewModel {
             case .decorationSaved(let decoration):
                 apply(decoration)
             case .penDecorationSaved(let decoration):
+                apply(decoration)
+            case .stampDecorationSaved(let decoration):
                 apply(decoration)
             case .decorationDeleted(let eventBoardID, let decorationID):
                 applyDecorationDeletion(boardID: eventBoardID, decorationID: decorationID)
@@ -309,6 +335,71 @@ final class BoardPhotoEditorViewModel {
         penErrorMessage = nil
     }
 
+    @discardableResult
+    func addStamp(_ stamp: BoardStampKind, x: Double, y: Double) async -> Bool {
+        guard let boardID, state == .loaded, isEditable, !isSavingStamp else {
+            if !isEditable {
+                stampErrorMessage = String(localized: "boards.photos.closed")
+            }
+            return false
+        }
+
+        let placement = BoardStampPlacement(stamp: stamp, x: x, y: y)
+        let request: PendingStampAddition
+        if let pendingStampAddition,
+           pendingStampAddition.boardID == boardID,
+           pendingStampAddition.placement == placement {
+            request = pendingStampAddition
+        } else {
+            request = PendingStampAddition(id: UUID(), boardID: boardID, placement: placement)
+            pendingStampAddition = request
+        }
+        pendingStampPlacement = placement
+        isSavingStamp = true
+        stampErrorMessage = nil
+        defer { isSavingStamp = false }
+
+        do {
+            let decoration = try await createStampDecoration(
+                request.id,
+                boardID,
+                stamp,
+                placement.x,
+                placement.y
+            )
+            guard decoration.boardID == boardID else {
+                stampErrorMessage = String(localized: "boards.decorations.stamp.add_failed")
+                return false
+            }
+            pendingStampAddition = nil
+            pendingStampPlacement = nil
+            apply(decoration)
+            return true
+        } catch is CancellationError {
+            return false
+        } catch {
+            stampErrorMessage = decorationMessage(
+                for: error,
+                invalidKey: "boards.decorations.stamp.invalid",
+                failureKey: "boards.decorations.stamp.add_failed"
+            )
+            return false
+        }
+    }
+
+    @discardableResult
+    func retryPendingStamp() async -> Bool {
+        guard let placement = pendingStampPlacement else { return false }
+        return await addStamp(placement.stamp, x: placement.x, y: placement.y)
+    }
+
+    func discardPendingStamp() {
+        guard !isSavingStamp else { return }
+        pendingStampAddition = nil
+        pendingStampPlacement = nil
+        stampErrorMessage = nil
+    }
+
     func isLockedByAnotherParticipant(_ photo: BoardPhoto) -> Bool {
         guard let lockedBy = photo.lockedBy, lockedBy != currentUserID,
               let lockExpiresAt = photo.lockExpiresAt else { return false }
@@ -343,6 +434,17 @@ final class BoardPhotoEditorViewModel {
         penDecorations = sorted(penDecorations)
     }
 
+    private func apply(_ decoration: BoardStampDecoration) {
+        guard decoration.boardID == boardID else { return }
+        if let index = stampDecorations.firstIndex(where: { $0.id == decoration.id }) {
+            guard decoration.revision >= stampDecorations[index].revision else { return }
+            stampDecorations[index] = decoration
+        } else {
+            stampDecorations.append(decoration)
+        }
+        stampDecorations = sorted(stampDecorations)
+    }
+
     private func apply(_ change: BoardPhotoSavedChange, boardID: UUID, requestID: UUID) async {
         guard change.boardID == self.boardID, change.boardID == boardID else { return }
         guard let index = photos.firstIndex(where: { $0.id == change.id }) else {
@@ -368,6 +470,7 @@ final class BoardPhotoEditorViewModel {
         guard boardID == self.boardID else { return }
         textDecorations.removeAll { $0.id == decorationID }
         penDecorations.removeAll { $0.id == decorationID }
+        stampDecorations.removeAll { $0.id == decorationID }
     }
 
     private func refreshSnapshot(boardID: UUID, requestID: UUID) async {
@@ -377,6 +480,7 @@ final class BoardPhotoEditorViewModel {
             photos = sorted(snapshot.photos)
             textDecorations = sorted(snapshot.textDecorations)
             penDecorations = sorted(snapshot.penDecorations)
+            stampDecorations = sorted(snapshot.stampDecorations)
             isEditable = snapshot.isOpen && snapshot.closesAt > Date()
             state = .loaded
         } catch is CancellationError {
@@ -387,6 +491,7 @@ final class BoardPhotoEditorViewModel {
                 photos = []
                 textDecorations = []
                 penDecorations = []
+                stampDecorations = []
                 isEditable = false
                 state = .failed(message(for: error, fallbackKey: "boards.photos.load_failed"))
             }
@@ -406,6 +511,12 @@ final class BoardPhotoEditorViewModel {
     }
 
     private func sorted(_ decorations: [BoardPenDecoration]) -> [BoardPenDecoration] {
+        decorations.sorted {
+            ($0.layer, $0.zIndex, $0.id.uuidString) < ($1.layer, $1.zIndex, $1.id.uuidString)
+        }
+    }
+
+    private func sorted(_ decorations: [BoardStampDecoration]) -> [BoardStampDecoration] {
         decorations.sorted {
             ($0.layer, $0.zIndex, $0.id.uuidString) < ($1.layer, $1.zIndex, $1.id.uuidString)
         }
@@ -479,4 +590,10 @@ private struct PendingPenAddition: Equatable, Sendable {
     let id: UUID
     let boardID: UUID
     let points: [BoardPenPoint]
+}
+
+private struct PendingStampAddition: Equatable, Sendable {
+    let id: UUID
+    let boardID: UUID
+    let placement: BoardStampPlacement
 }

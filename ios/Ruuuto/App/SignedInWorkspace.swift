@@ -64,6 +64,16 @@ final class SignedInWorkspace {
                     points: points
                 )
             },
+            addStamp: { decorationID, boardID, stamp, x, y in
+                try await BoardDecorationAPI.addStamp(
+                    client: client,
+                    decorationID: decorationID,
+                    boardID: boardID,
+                    stamp: stamp,
+                    x: x,
+                    y: y
+                )
+            },
             observeBoard: { BoardPhotoSyncAPI.events(client: client, boardID: $0) }
         )
         boardPresence = BoardPresenceViewModel(

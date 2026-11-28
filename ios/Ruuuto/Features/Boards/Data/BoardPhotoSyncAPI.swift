@@ -65,6 +65,8 @@ enum BoardPhotoSyncAPI {
                                             continuation.yield(.decorationSaved(textDecoration))
                                         } else if let penDecoration = decoration.penModel {
                                             continuation.yield(.penDecorationSaved(penDecoration))
+                                        } else if let stampDecoration = decoration.stampModel {
+                                            continuation.yield(.stampDecorationSaved(stampDecoration))
                                         }
                                     } catch {
                                         continuation.yield(.snapshotRequired)

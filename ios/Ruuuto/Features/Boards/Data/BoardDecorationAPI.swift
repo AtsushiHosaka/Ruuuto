@@ -80,6 +80,42 @@ enum BoardDecorationAPI {
         }
     }
 
+    static func addStamp(
+        client: SupabaseClient,
+        decorationID: UUID,
+        boardID: UUID,
+        stamp: BoardStampKind,
+        x: Double,
+        y: Double
+    ) async throws -> BoardStampDecoration {
+        do {
+            let decoration: BoardDecorationDTO = try await client
+                .rpc(
+                    "ruuuto_add_decoration",
+                    params: AddStampParameters(
+                        decorationID: decorationID,
+                        boardID: boardID,
+                        kind: "stamp",
+                        content: StampContent(stampID: stamp.rawValue),
+                        x: x,
+                        y: y,
+                        rotation: 0,
+                        scale: 1
+                    )
+                )
+                .execute()
+                .value
+            guard let model = decoration.stampModel else {
+                throw BoardDecorationEditingError.invalidContent
+            }
+            return model
+        } catch let error as PostgrestError {
+            throw mapped(error) ?? error
+        } catch let error as HTTPError where [401, 403].contains(error.response.statusCode) {
+            throw BoardDecorationEditingError.forbidden
+        }
+    }
+
     private static func mapped(_ error: PostgrestError) -> BoardDecorationEditingError? {
         switch error.code {
         case "42501", "PGRST301", "PGRST302", "PGRST303": .forbidden
@@ -150,6 +186,36 @@ private struct PenStrokeContent: Encodable {
     let width: Double
 }
 
+private struct AddStampParameters: Encodable {
+    let decorationID: UUID
+    let boardID: UUID
+    let kind: String
+    let content: StampContent
+    let x: Double
+    let y: Double
+    let rotation: Double
+    let scale: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case decorationID = "p_decoration_id"
+        case boardID = "p_board_id"
+        case kind = "p_kind"
+        case content = "p_content"
+        case x = "p_x"
+        case y = "p_y"
+        case rotation = "p_rotation"
+        case scale = "p_scale"
+    }
+}
+
+private struct StampContent: Encodable {
+    let stampID: String
+
+    private enum CodingKeys: String, CodingKey {
+        case stampID = "stamp_id"
+    }
+}
+
 struct BoardDecorationDTO: Decodable, Sendable {
     let id: UUID
     let boardID: UUID
@@ -207,12 +273,37 @@ struct BoardDecorationDTO: Decodable, Sendable {
             revision: revision
         )
     }
+
+    var stampModel: BoardStampDecoration? {
+        guard kind == "stamp", let stampID = content.stampID,
+              let stamp = BoardStampKind(rawValue: stampID)
+        else { return nil }
+        return BoardStampDecoration(
+            id: id,
+            boardID: boardID,
+            createdBy: createdBy,
+            stamp: stamp,
+            x: x,
+            y: y,
+            rotation: rotation,
+            scale: scale,
+            layer: layer,
+            zIndex: zIndex,
+            revision: revision
+        )
+    }
 }
 
 struct BoardDecorationContentDTO: Decodable, Sendable {
     let text: String?
     let color: String?
     let strokes: [BoardPenStrokeDTO]?
+    let stampID: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case text, color, strokes
+        case stampID = "stamp_id"
+    }
 }
 
 struct BoardPenStrokeDTO: Decodable, Sendable {

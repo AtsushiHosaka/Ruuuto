@@ -189,6 +189,118 @@
         "ja": { "stringUnit": { "state": "translated", "value": "線を保存できませんでした" } }
       }
     },
+    "boards.decorations.stamp.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add stamp" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプを置く" } }
+      }
+    },
+    "boards.decorations.stamp.add_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t save the stamp. Try again." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプを保存できませんでした。もう一度お試しください。" } }
+      }
+    },
+    "boards.decorations.stamp.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "キャンセル" } }
+      }
+    },
+    "boards.decorations.stamp.canvas": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Stamp placement area" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプ配置エリア" } }
+      }
+    },
+    "boards.decorations.stamp.discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Discard" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "取り消す" } }
+      }
+    },
+    "boards.decorations.stamp.instruction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tap the board to place the selected stamp." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ボードをタップして選んだスタンプを置きます。" } }
+      }
+    },
+    "boards.decorations.stamp.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The stamp data is invalid." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプのデータが正しくありません。" } }
+      }
+    },
+    "boards.decorations.stamp.option.flower": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Flower" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "花" } }
+      }
+    },
+    "boards.decorations.stamp.option.heart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Heart" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ハート" } }
+      }
+    },
+    "boards.decorations.stamp.option.smile": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Smile" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スマイル" } }
+      }
+    },
+    "boards.decorations.stamp.option.sparkles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sparkles" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "きらきら" } }
+      }
+    },
+    "boards.decorations.stamp.option.star": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Star" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "星" } }
+      }
+    },
+    "boards.decorations.stamp.option.sun": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Sun" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "太陽" } }
+      }
+    },
+    "boards.decorations.stamp.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Try again" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "もう一度試す" } }
+      }
+    },
+    "boards.decorations.stamp.save_error_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn’t save the stamp" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプを保存できませんでした" } }
+      }
+    },
+    "boards.decorations.stamp.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Choose a stamp" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スタンプを選ぶ" } }
+      }
+    },
     "boards.groups.empty": {
       "extractionState": "manual",
       "localizations": {
